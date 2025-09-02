@@ -2,7 +2,7 @@
 title: "Interaktív tanítás -- felhívás"
 ---
 
-# Interaktív tanítás - felhívás
+# Felhívás
 
 A HUN-REN Rényi Alfréd Matematikai Kutatóintézet Szakmódszertani Osztálya 2025 októberétől egy matematikatanítási programot indít, amelybe matematikatanárok jelentkezését várja.
 
@@ -28,5 +28,6 @@ A programról egy [részletesebb leírást](https://felfedezteto-matematika.gith
 A kísérlet során keletkezett anyagokat, tapasztalatokat szeretnénk megosztani az érdeklődő tanárokkal.
 
 Minden jelentkezőt szeretettel várunk:
+
 Babus Réka, Juhász Péter, Szász Réka, Szűcs Gábor, Varga Eszter
 
