@@ -1,1 +1,581 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hatszög egy tengellyel</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
 
+        h1, h2, p {
+            text-align: center;
+            color: #333;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .task-box {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fafafa;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        .task-description {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        #hexagon-container {
+            width: 350px;
+            height: 350px;
+            margin-bottom: 20px;
+        }
+
+        .hexagon-outline {
+            fill: none;
+            stroke: black;
+            stroke-width: 2;
+        }
+
+        .symmetry-axis {
+            stroke: blue;
+            stroke-width: 1;
+            stroke-dasharray: 5 5;
+            display: none;
+        }
+
+        .vertex-number {
+            font-size: 20px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+
+        .increase-button {
+            fill: #4CAF50;
+            cursor: pointer;
+        }
+        
+        .increase-button:hover {
+            fill: #0056b3;
+        }
+        
+        .increase-button-text {
+            font-size: 18px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: central;
+            fill: white;
+            pointer-events: none;
+        }
+
+        .control-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .control-box, .check-box {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fafafa;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* Alap gomb stílusok, minden gombra érvényes */
+        .control-button {
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.2s, box-shadow 0.2s, border-color 0.2s, color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        /* 1. Sima, normál gomb */
+        .button-normal {
+            background-color: #e9ecef;
+            color: black;
+            border: 1px solid #ccc;
+        }
+
+        .button-normal:hover:not(:disabled) {
+            background-color: #ced4da;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        /* 2. Kiemelt, zöld gomb */
+        .button-highlight {
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+
+        .button-highlight:hover:not(:disabled) {
+            background-color: #218838;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* 3. Letiltott gomb (minden típusra) */
+        .control-button:disabled {
+            background-color: #ccc !important;
+            color: #6c757d !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+            border-color: #adb5bd !important;
+        }
+
+        .change-counter {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            background-color: #e3f2fd;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .result-message {
+            font-size: 14px;
+            font-weight: bold;
+            color: #d32f2f;
+            margin-top: 10px;
+            text-align: center;
+            min-height: 40px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hatszög egy tengellyel</h1>
+    <div class="task-box">
+        <p class="task-description">A feladat, hogy a hatszög csúcsain lévő számok növelésével pontosan egy szimmetriatengelyt hozz létre. Próbáld megoldani minél kevesebb változtatással. Ha megoldottad, akkor kattints a 'Beküldés' gombra az ellenőrzéshez.</p>
+    </div>
+    <div id="hexagon-container"></div>
+    <div class="control-container">
+        <div class="control-box">
+            <button id="toggleSymmetryAxes" class="control-button button-normal">Szimmetriatengelyek</button>
+            <button id="undoButton" class="control-button button-normal">Visszavonás</button>
+            <button id="checkSymmetryButton" class="control-button button-highlight">Beküldés</button>
+        </div>
+        <div class="check-box">
+            <div id="changeCounter" class="change-counter">Változtatások: 0</div>
+            <button id="resetToBaseButton" class="control-button button-normal">Újrakezdem</button>
+            <button id="resetNumbers" class="control-button button-highlight" style="display:none;">Új játék</button>
+            <button id="downloadImageButton" class="control-button button-highlight" style="display:none;">Kép letöltése</button>
+            <div id="symmetryCheckResult" class="result-message"></div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        function initializeApp() {
+            const elements = {
+                hexagonContainer: document.getElementById('hexagon-container'),
+                changeCounter: document.getElementById('changeCounter'),
+                symmetryCheckResult: document.getElementById('symmetryCheckResult'),
+                toggleSymmetryAxes: document.getElementById('toggleSymmetryAxes'),
+                undoButton: document.getElementById('undoButton'),
+                resetToBaseButton: document.getElementById('resetToBaseButton'),
+                checkSymmetryButton: document.getElementById('checkSymmetryButton'),
+                resetNumbers: document.getElementById('resetNumbers'),
+                downloadImageButton: document.getElementById('downloadImageButton'),
+                vertexNumbers: [],
+                svgAxes: {},
+                svgElement: null,
+            };
+
+            const state = {
+                vertexValues: [],
+                baseValues: [],
+                changeCount: 0,
+                undoHistory: [],
+                MAX_UNDO_STEPS: 10,
+            };
+
+            const axisConfigurations = {
+                'axis-v-0-3': { name: "Csúcsokon át (0-3)", pairs: [[1, 5], [2, 4]] },
+                'axis-v-1-4': { name: "Csúcsokon át (1-4)", pairs: [[0, 2], [3, 5]] },
+                'axis-v-2-5': { name: "Csúcsokon át (2-5)", pairs: [[0, 4], [1, 3]] },
+                'axis-s-0-1_3-4': { name: "Oldalfelezőkön át (0-1 és 3-4)", pairs: [[0, 1], [2, 5], [3, 4]] },
+                'axis-s-1-2_4-5': { name: "Oldalfelezőkön át (1-2 és 4-5)", pairs: [[0, 3], [1, 2], [4, 5]] },
+                'axis-s-0-5_2-3': { name: "Oldalfelezőkön át (1-4 és 2-3)", pairs: [[0, 5], [1, 4], [2, 3]] },
+            };
+
+            function updateUI() {
+                state.vertexValues.forEach((value, index) => {
+                    elements.vertexNumbers[index].textContent = value;
+                });
+                elements.changeCounter.textContent = `Változtatások: ${state.changeCount}`;
+            }
+
+            function renderHexagon() {
+                elements.hexagonContainer.innerHTML = '';
+                const svgNS = 'http://www.w3.org/2000/svg';
+                const svg = document.createElementNS(svgNS, 'svg');
+                const size = 350;
+                const center = size / 2;
+                const radius = size / 2 * 0.75;
+                const buttonRadius = 15;
+                const numberOffset = 35;
+                svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+                elements.svgElement = svg;
+                const points = [];
+                const pointsString = [];
+                for (let i = 0; i < 6; i++) {
+                    const angleRad = (60 * i - 90) * (Math.PI / 180);
+                    points.push({ x: center + radius * Math.cos(angleRad), y: center + radius * Math.sin(angleRad) });
+                    pointsString.push(`${points[i].x},${points[i].y}`);
+                }
+                const polygon = document.createElementNS(svgNS, 'polygon');
+                polygon.setAttribute('points', pointsString.join(' '));
+                polygon.setAttribute('class', 'hexagon-outline');
+                svg.appendChild(polygon);
+                const midPoint = (p1, p2) => ({ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 });
+                const axisDefs = {
+                    'axis-v-0-3': { p1: points[0], p2: points[3] },
+                    'axis-v-1-4': { p1: points[1], p2: points[4] },
+                    'axis-v-2-5': { p1: points[2], p2: points[5] },
+                    'axis-s-0-1_3-4': { p1: midPoint(points[0], points[1]), p2: midPoint(points[3], points[4]) },
+                    'axis-s-1-2_4-5': { p1: midPoint(points[1], points[2]), p2: midPoint(points[4], points[5]) },
+                    'axis-s-0-5_2-3': { p1: midPoint(points[2], points[3]), p2: midPoint(points[5], points[0]) },
+                };
+
+                for (const id in axisDefs) {
+                    const line = document.createElementNS(svgNS, 'line');
+                    line.setAttribute('id', id);
+                    line.setAttribute('class', 'symmetry-axis');
+                    line.setAttribute('x1', axisDefs[id].p1.x);
+                    line.setAttribute('y1', axisDefs[id].p1.y);
+                    line.setAttribute('x2', axisDefs[id].p2.x);
+                    line.setAttribute('y2', axisDefs[id].p2.y);
+                    svg.appendChild(line);
+                    elements.svgAxes[id] = line;
+                }
+
+                points.forEach((p, i) => {
+                    const buttonCircle = document.createElementNS(svgNS, 'circle');
+                    buttonCircle.setAttribute('cx', p.x);
+                    buttonCircle.setAttribute('cy', p.y);
+                    buttonCircle.setAttribute('r', buttonRadius);
+                    buttonCircle.setAttribute('class', 'increase-button');
+                    buttonCircle.addEventListener('click', () => handleButtonClick(i));
+                    svg.appendChild(buttonCircle);
+                    
+                    const buttonText = document.createElementNS(svgNS, 'text');
+                    buttonText.setAttribute('x', p.x);
+                    buttonText.setAttribute('y', p.y);
+                    buttonText.setAttribute('class', 'increase-button-text');
+                    buttonText.textContent = '+';
+                    svg.appendChild(buttonText);
+                    
+                    const numberText = document.createElementNS(svgNS, 'text');
+                    numberText.setAttribute('class', 'vertex-number');
+                    const angleRad = (60 * i - 90) * (Math.PI / 180);
+                    const numX = center + (radius + numberOffset) * Math.cos(angleRad);
+                    const numY = center + (radius + numberOffset) * Math.sin(angleRad);
+                    numberText.setAttribute('x', numX);
+                    numberText.setAttribute('y', numY);
+                    svg.appendChild(numberText);
+                    elements.vertexNumbers.push(numberText);
+                });
+
+                elements.hexagonContainer.appendChild(svg);
+            }
+
+            function handleButtonClick(index) {
+                state.undoHistory.push({ index, oldValue: state.vertexValues[index] });
+                if (state.undoHistory.length > state.MAX_UNDO_STEPS) {
+                    state.undoHistory.shift();
+                }
+                state.vertexValues[index]++;
+                state.changeCount++;
+                hideAllAxes();
+                elements.symmetryCheckResult.textContent = '';
+                updateUI();
+                resetControlButtons();
+            }
+
+            function setRandomNumbers() {
+                state.undoHistory = [];
+                state.changeCount = 0;
+                state.vertexValues = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10) + 1);
+                state.baseValues = [...state.vertexValues];
+                elements.symmetryCheckResult.textContent = '';
+                hideAllAxes();
+                updateUI();
+                resetControlButtons();
+            }
+
+            function setButtonsDisabledState(isDisabled) {
+                elements.checkSymmetryButton.disabled = isDisabled;
+                elements.undoButton.disabled = isDisabled;
+                elements.toggleSymmetryAxes.disabled = isDisabled;
+            }
+
+            function resetControlButtons() {
+                setButtonsDisabledState(false);
+                
+                elements.checkSymmetryButton.style.display = 'block';
+                elements.resetNumbers.style.display = 'none';
+                elements.downloadImageButton.style.display = 'none';
+            }
+
+            function checkSymmetry(values, axisKey) {
+                const config = axisConfigurations[axisKey];
+                for (const pair of config.pairs) {
+                    const [index1, index2] = pair;
+                    if (values[index1] !== values[index2]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            function checkAndShowSymmetryAxes(values) {
+                hideAllAxes();
+                let foundAxesCount = 0;
+                for (const axisKey in axisConfigurations) {
+                    if (checkSymmetry(values, axisKey)) {
+                        elements.svgAxes[axisKey].style.display = 'block';
+                        foundAxesCount++;
+                    }
+                }
+                return foundAxesCount;
+            }
+
+            function hideAllAxes() {
+                Object.values(elements.svgAxes).forEach(axis => axis.style.display = 'none');
+            }
+
+            function getMinimumChangesForSingleAxis() {
+                let minChanges = Infinity;
+                for (const axisKey in axisConfigurations) {
+                    let currentChanges = 0;
+                    const tempValues = [...state.baseValues];
+                    const config = axisConfigurations[axisKey];
+                    let isPossible = true;
+
+                    for (const pair of config.pairs) {
+                        const [index1, index2] = pair;
+                        currentChanges += Math.abs(tempValues[index1] - tempValues[index2]);
+                        const maxVal = Math.max(tempValues[index1], tempValues[index2]);
+                        tempValues[index1] = maxVal;
+                        tempValues[index2] = maxVal;
+                    }
+                    
+                    for (const otherAxisKey in axisConfigurations) {
+                        if (axisKey === otherAxisKey) continue;
+                        if (checkSymmetry(tempValues, otherAxisKey)) {
+                            isPossible = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isPossible) {
+                        minChanges = Math.min(minChanges, currentChanges);
+                    }
+                }
+                return minChanges;
+            }
+            
+            // ÚJ FUNKCIÓ A KÉP LETÖLTÉSÉHEZ
+            async function downloadImageWithInfo() {
+                const originalValues = [...state.vertexValues];
+                const originalBaseValues = [...state.baseValues];
+
+                // Ideiglenesen felülírjuk a szövegeket a képgeneráláshoz
+                for (let i = 0; i < elements.vertexNumbers.length; i++) {
+                    elements.vertexNumbers[i].textContent = `${originalBaseValues[i]}→${originalValues[i]}`;
+                }
+
+                // Létrehozzuk a változtatások számát tartalmazó elemet
+                const changeInfo = document.createElement('div');
+                changeInfo.style.position = 'absolute';
+                changeInfo.style.bottom = '10px';
+                changeInfo.style.left = '50%';
+                changeInfo.style.transform = 'translateX(-50%)';
+                changeInfo.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                changeInfo.style.padding = '5px 10px';
+                changeInfo.style.borderRadius = '5px';
+                changeInfo.style.fontSize = '16px';
+                changeInfo.style.fontWeight = 'bold';
+                changeInfo.textContent = `Változtatások száma: ${state.changeCount}`;
+                document.body.appendChild(changeInfo);
+
+                await new Promise(resolve => setTimeout(resolve, 50)); // Várunk egy pillanatot, hogy a DOM frissüljön
+
+                const container = document.body;
+                
+                html2canvas(container, {
+                    useCORS: true,
+                    scale: 2,
+                    ignoreElements: (element) => {
+                        // Elrejti a gombokat és a feladatleírást
+                        return element.tagName === 'BUTTON' || element.tagName === 'A' || element.classList.contains('control-container') || element.classList.contains('task-box');
+                    }
+                }).then(canvas => {
+                    // Visszaállítjuk az eredeti állapotot
+                    for (let i = 0; i < elements.vertexNumbers.length; i++) {
+                        elements.vertexNumbers[i].textContent = originalValues[i];
+                    }
+                    document.body.removeChild(changeInfo);
+
+                    // Timestamp hozzáadása a fájlnévhez
+                    const timestamp = new Date().toISOString().substring(0, 19).replace(/[:.]/g, '').replace('T', '_');
+                    const fileName = `hatszog_szimmetria_megoldas_${timestamp}.png`;
+
+                    canvas.toBlob(blob => {
+                        const file = new File([blob], fileName, { type: 'image/png' });
+
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            navigator.share({
+                                files: [file],
+                                title: 'Hatszög szimmetriája',
+                                text: 'Nézd meg a megoldásomat!',
+                            }).catch(error => {
+                                console.error('Megosztás sikertelen:', error);
+                            });
+                        } else {
+                            const link = document.createElement('a');
+                            link.download = fileName;
+                            link.href = URL.createObjectURL(blob);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+                    });
+                });
+            }
+
+
+            elements.toggleSymmetryAxes.addEventListener('click', () => {
+                const isHidden = elements.toggleSymmetryAxes.textContent === 'Szimmetriatengelyek';
+                const foundAxesCount = checkAndShowSymmetryAxes(state.vertexValues);
+
+                if (isHidden && foundAxesCount > 0) {
+                    elements.toggleSymmetryAxes.textContent = 'Tengelyek elrejtése';
+                } else {
+                    hideAllAxes();
+                    elements.toggleSymmetryAxes.textContent = 'Szimmetriatengelyek';
+                }
+                elements.symmetryCheckResult.textContent = '';
+            });
+
+            elements.resetNumbers.addEventListener('click', () => {
+                setRandomNumbers();
+                elements.resetNumbers.style.display = 'none';
+                elements.downloadImageButton.style.display = 'none';
+                elements.checkSymmetryButton.style.display = 'block';
+                elements.resetToBaseButton.style.display = 'block';
+            });
+
+            elements.resetToBaseButton.addEventListener('click', () => {
+                if (state.baseValues.length > 0) {
+                    state.vertexValues = [...state.baseValues];
+                    state.changeCount = 0;
+                    elements.symmetryCheckResult.textContent = 'Számok visszaállítva az alaphelyzetbe.';
+                    state.undoHistory = [];
+                    hideAllAxes();
+                    updateUI();
+                    resetControlButtons();
+                    elements.checkSymmetryButton.style.display = 'block';
+                    elements.resetNumbers.style.display = 'none';
+                    elements.downloadImageButton.style.display = 'none';
+                }
+            });
+
+            elements.undoButton.addEventListener('click', () => {
+                if (state.undoHistory.length > 0) {
+                    const lastChange = state.undoHistory.pop();
+                    state.vertexValues[lastChange.index] = lastChange.oldValue;
+                    if (state.changeCount > 0) {
+                        state.changeCount--;
+                    }
+                    elements.symmetryCheckResult.textContent = '';
+                    hideAllAxes();
+                    updateUI();
+                    resetControlButtons();
+                } else {
+                    elements.symmetryCheckResult.textContent = 'Nincs mit visszavonni.';
+                }
+            });
+
+            elements.downloadImageButton.addEventListener('click', downloadImageWithInfo);
+
+            elements.checkSymmetryButton.addEventListener('click', () => {
+                elements.symmetryCheckResult.textContent = 'Számítás folyamatban...';
+                
+                setButtonsDisabledState(true);
+                elements.symmetryCheckResult.style.color = '#218838';
+
+                hideAllAxes();
+                setTimeout(() => {
+                    const currentAxesCount = checkAndShowSymmetryAxes(state.vertexValues);
+                    let message = '';
+
+                    if (currentAxesCount === 1) {
+                        const minChanges = getMinimumChangesForSingleAxis();
+                        elements.downloadImageButton.style.display = 'block';
+                        
+                        if (state.changeCount === minChanges) {
+                            message = 'Gratulálunk, megoldottad a feladatot a minimális változtatással.';
+                            elements.resetNumbers.style.display = 'block';
+                            elements.resetToBaseButton.style.display = 'none';
+                        } else {
+                            message = `Jó a megoldás, de még lehet kevesebből is, ha van kedved próbálkozz!`;
+                            elements.resetNumbers.style.display = 'block';
+                            elements.resetToBaseButton.style.display = 'block';
+                        }
+                    } else {
+                        message = 'Nem stimmel a tengelyek száma.';
+                        elements.resetNumbers.style.display = 'block';
+                        elements.downloadImageButton.style.display = 'none';
+                        elements.resetToBaseButton.style.display = 'block';
+                    }
+
+                    elements.symmetryCheckResult.textContent = message;
+
+                }, 50);
+            });
+
+            renderHexagon();
+            setRandomNumbers();
+        }
+    </script>
+</body>
+</html>
