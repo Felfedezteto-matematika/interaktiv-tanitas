@@ -26,4 +26,4 @@ Törekszünk arra, hogy minél kevesebb munkával járjon a kísérletben való 
 
 ### Adatgyűjtés és felhasználás
 
-A program folyamán adatokat fogunk gyűjteni azzal a céllal, hogy ezeket elemezzük, az eredmények tükrében a jövőben a programot továbbfejlesszük, és az eredményeket megjelentessük tudományos publikációban. Általánosságban elmondható, hogy semmilyen képi és hanganyagot nem teszünk mások számára elérhetővé, minden adatból maximum anonimizált szövegrészleteket teszünk közzé. Részleteket a hozzájárulási nyilatkozat tartalmaz, amelyet minden résztvevőnek alá kell írnia a kezdő találkozó elején.
+A program folyamán adatokat fogunk gyűjteni azzal a céllal, hogy ezeket elemezzük, az eredmények tükrében a jövőben a programot továbbfejlesszük, és az eredményeket megjelentessük tudományos publikációban. Általánosságban elmondható, hogy semmilyen képi és hanganyagot nem teszünk mások számára elérhetővé, minden adatból maximum anonimizált szövegrészleteket teszünk közzé. Részleteket a [hozzájárulási nyilatkozat](https://docs.google.com/document/d/1WhvybyRmSY9D5l47vjRk2BWQ5HVWCphV/edit) tartalmaz, amelyet minden résztvevőnek alá kell írnia a kezdő találkozó elején.
