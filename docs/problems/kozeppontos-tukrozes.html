@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Középpontos tükrözés</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        .point {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="font-sans flex flex-col items-center justify-center min-h-screen bg-slate-100 text-slate-800 p-4">
+
+<div class="container w-full max-w-xl bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
+    <h1 class="text-2xl font-semibold text-slate-900 mb-4 text-center">Középpontos tükrözés</h1>
+
+    <div class="bg-slate-50 p-4 rounded-lg shadow-inner mb-6 text-slate-700 text-center">
+        <p>A feladat, hogy megkeresd a P pont középpontosan tükrözött képét. Segítslgül megadtunk egy háromszöget (feketével), és ennek a tükörképét (szürkével). Kattints a P pont tükörképének helyére!</p>
+    </div>
+
+    <svg id="svgCanvas" class="w-full h-96 border border-slate-300 rounded-lg bg-slate-50 shadow-inner" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+
+    <button id="mainActionButton" class="mt-6 py-3 px-6 text-lg font-semibold rounded-lg shadow-md transition-all duration-200 ease-in-out bg-slate-300 text-slate-800 hover:bg-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">Következő feladvány</button>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4 w-full">
+        <div class="flex flex-col items-center">
+            <div class="text-lg font-semibold text-slate-800 text-center mb-2">Tippek eltérései</div>
+            <div id="deviationBoxesWrapper" class="flex flex-wrap justify-center gap-2">
+                <div id="deviationBox0" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
+                <div id="deviationBox1" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
+                <div id="deviationBox2" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
+                <div id="deviationBox3" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
+                <div id="deviationBox4" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
+            </div>
+        </div>
+        <div class="flex flex-col items-center">
+            <div class="text-lg font-semibold text-slate-800 text-center mb-2">Átlag</div>
+            <div id="averageDeviationBox" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-blue-100 border border-blue-300 rounded-md text-blue-800">--</div>
+        </div>
+    </div>
+
+    <div id="gameStatus" class="mt-6 text-xl font-medium text-slate-800 text-center"></div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const svgCanvas = document.getElementById('svgCanvas');
+        const gameStatusEl = document.getElementById('gameStatus');
+        const mainActionButton = document.getElementById('mainActionButton');
+        const averageDeviationBox = document.getElementById('averageDeviationBox');
+        const deviationBoxesWrapper = document.getElementById('deviationBoxesWrapper');
+        
+        // --- Játék állapotának változói ---
+        let state = {
+            currentPuzzle: 1,
+            totalPuzzles: 5,
+            allDistances: [],
+            isGuessMade: false,
+            puzzleData: {}
+        };
+
+        // --- Segédfüggvények ---
+        function getRandomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function clearCanvas() {
+            svgCanvas.innerHTML = '';
+        }
+
+        // --- Pont és háromszög generálása és ellenőrzése ---
+        function generateValidPoints() {
+            const minCoord = 50, maxCoord = 350;
+            const buffer = 30;
+            const minAngleRad = 15 * Math.PI / 180;
+
+            const getRandomPoint = () => ({
+                x: getRandomInt(minCoord, maxCoord),
+                y: getRandomInt(minCoord, maxCoord)
+            });
+
+            const getDistance = (p1, p2) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+
+            const areAnglesValid = (p1, p2, p3) => {
+                const a = getDistance(p2, p3);
+                const b = getDistance(p1, p3);
+                const c = getDistance(p1, p2);
+
+                if (a === 0 || b === 0 || c === 0) return false;
+
+                const angleA = Math.acos((b * b + c * c - a * a) / (2 * b * c));
+                const angleB = Math.acos((a * a + c * c - b * b) / (2 * a * c));
+                const angleC = Math.acos((a * a + b * b - c * c) / (2 * a * b));
+
+                return angleA >= minAngleRad && angleB >= minAngleRad && angleC >= minAngleRad;
+            };
+
+            const isOutOfBounds = (points) => {
+                return points.some(p => p.x < buffer || p.x > 400 - buffer || p.y < buffer || p.y > 400 - buffer);
+            };
+
+            while (true) {
+                const centerO = getRandomPoint();
+                const pointP = getRandomPoint();
+                const pointsABC = [getRandomPoint(), getRandomPoint(), getRandomPoint()];
+
+                if (!areAnglesValid(pointsABC[0], pointsABC[1], pointsABC[2])) continue;
+
+                const pointP_prime = {
+                    x: 2 * centerO.x - pointP.x,
+                    y: 2 * centerO.y - pointP.y
+                };
+
+                const pointsABC_prime = pointsABC.map(p => ({
+                    x: 2 * centerO.x - p.x,
+                    y: 2 * centerO.y - p.y
+                }));
+
+                const allPoints = [centerO, pointP, pointP_prime, ...pointsABC, ...pointsABC_prime];
+                
+                if (!isOutOfBounds(allPoints)) {
+                    return {
+                        O: centerO,
+                        P: pointP,
+                        P_prime: pointP_prime,
+                        ABC: pointsABC,
+                        ABC_prime: pointsABC_prime
+                    };
+                }
+            }
+        }
+
+        // --- Kirajzoló függvények ---
+        function drawPuzzle() {
+            clearCanvas();
+            state.isGuessMade = false;
+            
+            state.puzzleData = generateValidPoints();
+            const { P, ABC, ABC_prime } = state.puzzleData;
+
+            // Kezdő háromszög
+            const pointsString = ABC.map(p => `${p.x},${p.y}`).join(' ');
+            const triangle = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            triangle.setAttribute("points", pointsString);
+            triangle.setAttribute("fill", "none");
+            triangle.setAttribute("stroke", "#000000"); // black
+            triangle.setAttribute("stroke-width", "2");
+            svgCanvas.appendChild(triangle);
+
+            // Tükörkép háromszög
+            const primePointsString = ABC_prime.map(p => `${p.x},${p.y}`).join(' ');
+            const reflectedTriangle = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            reflectedTriangle.setAttribute("points", primePointsString);
+            reflectedTriangle.setAttribute("fill", "none");
+            reflectedTriangle.setAttribute("stroke", "#808080"); // gray
+            reflectedTriangle.setAttribute("stroke-width", "2");
+            reflectedTriangle.setAttribute("stroke-dasharray", "5,5");
+            svgCanvas.appendChild(reflectedTriangle);
+            
+            // P pont és felirat
+            const pointP = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            pointP.setAttribute("cx", P.x);
+            pointP.setAttribute("cy", P.y);
+            pointP.setAttribute("r", 4);
+            pointP.setAttribute("fill", "#1D4ED8"); // dark blue
+            svgCanvas.appendChild(pointP);
+            
+            const textP = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            textP.setAttribute("x", P.x + 5);
+            textP.setAttribute("y", P.y + 5);
+            textP.setAttribute("fill", "#1D4ED8"); // dark blue
+            textP.setAttribute("font-size", "12");
+            textP.textContent = "P";
+            svgCanvas.appendChild(textP);
+
+            // A, B, C és A', B', C' feliratok
+            ABC.forEach((p, i) => {
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", p.x + (i === 2 ? 0 : 5));
+                text.setAttribute("y", p.y + (i === 2 ? 15 : 5));
+                text.setAttribute("fill", "#000000"); // black
+                text.setAttribute("font-size", "12");
+                text.setAttribute("text-anchor", i === 2 ? "middle" : "start");
+                text.textContent = String.fromCharCode(65 + i);
+                svgCanvas.appendChild(text);
+
+                const primeP = ABC_prime[i];
+                const primeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                primeText.setAttribute("x", primeP.x + (i === 2 ? 0 : 5));
+                primeText.setAttribute("y", primeP.y + (i === 2 ? 15 : 5));
+                primeText.setAttribute("fill", "#808080"); // gray
+                primeText.setAttribute("font-size", "12");
+                primeText.setAttribute("text-anchor", i === 2 ? "middle" : "start");
+                primeText.textContent = String.fromCharCode(65 + i) + "'";
+                svgCanvas.appendChild(primeText);
+            });
+            
+            gameStatusEl.textContent = `${state.currentPuzzle} / ${state.totalPuzzles}: Hol van a P pont tükörképe? Kattints a válaszhoz!`;
+            mainActionButton.disabled = true;
+            averageDeviationBox.textContent = '--';
+            for (let i = 0; i < state.totalPuzzles; i++) {
+                const box = document.getElementById(`deviationBox${i}`);
+                box.textContent = '--';
+            }
+        }
+
+        function showSolutionAndAnimate(onComplete) {
+            const { P, P_prime, O } = state.puzzleData;
+            
+            // Hozzáadjuk a megoldást és a tengelyt
+            const solutionPoint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            solutionPoint.setAttribute("cx", P_prime.x);
+            solutionPoint.setAttribute("cy", P_prime.y);
+            solutionPoint.setAttribute("r", 5);
+            solutionPoint.setAttribute("fill", "#22C55E"); // green
+            svgCanvas.appendChild(solutionPoint);
+
+            const centerPointO = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            centerPointO.setAttribute("cx", O.x);
+            centerPointO.setAttribute("cy", O.y);
+            centerPointO.setAttribute("r", 5);
+            centerPointO.setAttribute("fill", "#EF4444"); // red
+            svgCanvas.appendChild(centerPointO);
+
+            const centerTextO = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            centerTextO.setAttribute("x", O.x + 10);
+            centerTextO.setAttribute("y", O.y);
+            centerTextO.setAttribute("fill", "#EF4444"); // red
+            centerTextO.setAttribute("font-size", "12");
+            centerTextO.textContent = "O";
+            svgCanvas.appendChild(centerTextO);
+            
+            const linePP = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            linePP.setAttribute("x1", P.x);
+            linePP.setAttribute("y1", P.y);
+            linePP.setAttribute("x2", P_prime.x);
+            linePP.setAttribute("y2", P_prime.y);
+            linePP.setAttribute("stroke", "#475569");
+            linePP.setAttribute("stroke-dasharray", "2,2");
+            svgCanvas.appendChild(linePP);
+            
+            // Animáció
+            const startPointsString = state.puzzleData.ABC.map(p => `${p.x},${p.y}`).join(' ');
+            const endPointsString = state.puzzleData.ABC_prime.map(p => `${p.x},${p.y}`).join(' ');
+            const animTriangle = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            animTriangle.setAttribute("points", startPointsString);
+            animTriangle.setAttribute("fill", "none");
+            animTriangle.setAttribute("stroke", "#000000"); // black
+            animTriangle.setAttribute("stroke-width", "2");
+            svgCanvas.appendChild(animTriangle);
+
+            const animPointP = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            animPointP.setAttribute("cx", P.x);
+            animPointP.setAttribute("cy", P.y);
+            animPointP.setAttribute("r", 4);
+            animPointP.setAttribute("fill", "#1D4ED8"); // dark blue
+            svgCanvas.appendChild(animPointP);
+
+            const duration = 2500;
+            const delay = 500;
+
+            setTimeout(() => {
+                const startTime = performance.now();
+                function animate(currentTime) {
+                    const elapsedTime = currentTime - startTime;
+                    const progress = Math.min(elapsedTime / duration, 1);
+
+                    const startPoints = startPointsString.split(' ').map(p => p.split(',').map(Number));
+                    const endPoints = endPointsString.split(' ').map(p => p.split(',').map(Number));
+                    const currentPoints = startPoints.map((start, i) => {
+                        const end = endPoints[i];
+                        const x = start[0] + (end[0] - start[0]) * progress;
+                        const y = start[1] + (end[1] - start[1]) * progress;
+                        return `${x},${y}`;
+                    }).join(' ');
+                    animTriangle.setAttribute('points', currentPoints);
+                    
+                    const currentPx = P.x + (P_prime.x - P.x) * progress;
+                    const currentPy = P.y + (P_prime.y - P.y) * progress;
+                    animPointP.setAttribute("cx", currentPx);
+                    animPointP.setAttribute("cy", currentPy);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        if (onComplete) {
+                            onComplete();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }, delay);
+        }
+
+        // --- Kijelzők frissítése ---
+        function updateDisplays() {
+            // A feltétel a játék végének ellenőrzésére: utolsó feladvány és megtörtént a tipp.
+            if (state.currentPuzzle === state.totalPuzzles && state.isGuessMade) {
+                gameStatusEl.textContent = "Vége a játéknak!";
+                mainActionButton.textContent = "Új játék";
+                mainActionButton.classList.remove('bg-slate-300', 'hover:bg-slate-400');
+                mainActionButton.classList.add('bg-green-500', 'hover:bg-green-600', 'text-white');
+            } else {
+                gameStatusEl.textContent = `Játék ${state.currentPuzzle} / ${state.totalPuzzles}`;
+                mainActionButton.textContent = "Következő feladvány";
+                mainActionButton.classList.remove('bg-green-500', 'hover:bg-green-600', 'text-white');
+                mainActionButton.classList.add('bg-slate-300', 'hover:bg-slate-400');
+            }
+            
+            if (state.allDistances.length > 0) {
+                const totalDistance = state.allDistances.reduce((sum, current) => sum + current, 0);
+                const averageDistance = totalDistance / state.allDistances.length;
+                averageDeviationBox.textContent = averageDistance.toFixed(2);
+            } else {
+                averageDeviationBox.textContent = `--`;
+            }
+
+            for (let i = 0; i < state.totalPuzzles; i++) {
+                const box = document.getElementById(`deviationBox${i}`);
+                if (i < state.allDistances.length) {
+                    box.textContent = state.allDistances[i].toFixed(2);
+                } else {
+                    box.textContent = `--`;
+                }
+            }
+        }
+
+        // --- Eseménykezelők ---
+        svgCanvas.addEventListener('click', (event) => {
+            if (state.isGuessMade) {
+                return;
+            }
+            state.isGuessMade = true;
+
+            const pt = svgCanvas.createSVGPoint();
+            pt.x = event.clientX;
+            pt.y = event.clientY;
+            const svgPoint = pt.matrixTransform(svgCanvas.getScreenCTM().inverse());
+            const click_x = svgPoint.x;
+            const click_y = svgPoint.y;
+
+            const { P_prime } = state.puzzleData;
+
+            // Tipped pontjának megjelenítése
+            const guessedCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            guessedCircle.setAttribute("cx", click_x);
+            guessedCircle.setAttribute("cy", click_y);
+            guessedCircle.setAttribute("r", 6); // Nagyobb sugár a jobb láthatóságért
+            guessedCircle.setAttribute("fill", "#3B82F6"); // blue
+            guessedCircle.classList.add("guessed-point");
+            svgCanvas.appendChild(guessedCircle);
+
+            const deviationLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            deviationLine.setAttribute("x1", click_x);
+            deviationLine.setAttribute("y1", click_y);
+            deviationLine.setAttribute("x2", P_prime.x);
+            deviationLine.setAttribute("y2", P_prime.y);
+            deviationLine.setAttribute("stroke", "#475569");
+            deviationLine.setAttribute("stroke-dasharray", "2,2");
+            svgCanvas.appendChild(deviationLine);
+
+            const distance = Math.sqrt(Math.pow(click_x - P_prime.x, 2) + Math.pow(click_y - P_prime.y, 2));
+            state.allDistances.push(distance);
+
+            showSolutionAndAnimate(() => {
+                updateDisplays();
+                mainActionButton.disabled = false;
+            });
+        });
+
+        mainActionButton.addEventListener('click', () => {
+            if (state.currentPuzzle < state.totalPuzzles) {
+                state.currentPuzzle++;
+                drawPuzzle();
+            } else {
+                // Játék vége - újraindítás
+                state.currentPuzzle = 1;
+                state.allDistances = [];
+                drawPuzzle();
+            }
+            updateDisplays();
+        });
+
+        // --- Inicializálás ---
+        drawPuzzle();
+        updateDisplays();
+    });
+</script>
+
+</body>
+</html>
