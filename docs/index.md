@@ -17,7 +17,7 @@ Idén ősszel egy témakört, a geometriai transzformációkat szeretnénk köz�
 Heti rendszerességgel küldünk interaktív feladatokat, óraterv javaslatokat. Reméljük, hogy közösen fogjuk alakítani a tananyagot, ezért számítunk arra, hogy a résztvevők rendszeresen megosztják egymással a tapasztalataikat. 
 Az elkészített feladatok, óratervek hasznosak lehetnek a 8. és 9. évfolyamokon is. Elsősorban olyanok jelentkezését várjuk akik tanítanak ezeken az évfolyamokon, és meg tudják oldani, hogy az őszi és a téli szünet között foglalkozzanak a témakörrel.
 
-![Hatszög egy tengellyel](hatszog-egy-tengellyel.png "Példa egy órán használható felületre")
+![Hatszög egy tengellyel](../images/hatszog-egy-tengellyel.png "Példa egy órán használható felületre")
 Példa egy órán használható felületre. 
 
 
