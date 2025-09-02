@@ -1,3 +1,8 @@
+---
+hide:
+  - title
+---
+
 # Felhívás
 
 A HUN-REN Rényi Alfréd Matematikai Kutatóintézet Szakmódszertani Osztálya 2025 szeptemberétől egy matematikatanítási programot indít, amelybe matematikatanárok jelentkezését várja.
