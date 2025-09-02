@@ -13,7 +13,7 @@ A program célja az is, hogy a résztvevők fejlődjenek a felfedeztető matemat
 
 A kísérletben való részvételnek nem feltétele a felfedeztető módszere ismerete. Várunk a kísérletben, ha nyitott vagy a felfedeztető módszer használatára: akár ha most próbálnád ki először, akár ha már használtad, és szeretnél fejlődni benne.
 
-<img src="https://felfedezteto-matematika.github.io/interaktiv-tanitas/images/hatszog-egy-tengellyel.png" alt="Hatszög egy tengellyel" width="200">
+<img src="https://felfedezteto-matematika.github.io/interaktiv-tanitas/images/hatszog-egy-tengellyel.png" alt="Hatszög egy tengellyel" width="500">
 
 *Példa egy órán használható [felületre](https://felfedezteto-matematika.github.io/interaktiv-tanitas/problems/hatszog-egy-tengellyel.html)*
 
