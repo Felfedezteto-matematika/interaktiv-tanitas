@@ -1,2 +1,1 @@
-# interaktiv-tanitas
 Matematikatanítás felfedezetetően
