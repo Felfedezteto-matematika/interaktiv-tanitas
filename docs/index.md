@@ -1,6 +1,5 @@
 ---
-hide:
-  - title
+hide: title
 ---
 
 # Felhívás
