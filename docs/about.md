@@ -1,4 +1,3 @@
-# Interaktív tanítás
 ## Geometriai transzformációk
 
 ### Kezdő találkozó. 
