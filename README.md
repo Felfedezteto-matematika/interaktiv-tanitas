@@ -1,0 +1,2 @@
+# interaktiv-tanitas
+Matematikatanítás felfedezetetően
