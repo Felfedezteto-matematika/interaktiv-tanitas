@@ -15,10 +15,10 @@ A kísérletben való részvételnek nem feltétele a felfedeztető módszere is
 
 <img src="https://felfedezteto-matematika.github.io/interaktiv-tanitas/images/hatszog-egy-tengellyel.png" alt="Hatszög egy tengellyel" width="500">
 
-*Példa egy órán használható [felületre](https://felfedezteto-matematika.github.io/interaktiv-tanitas/problems/hatszog-egy-tengellyel.html)*
-
+*Példa egy órán használható [felületre](https://felfedezteto-matematika.github.io/interaktiv-tanitas/problems/hatszog-egy-tengellyel.html).*
 
 Idén ősszel egy témakört, a geometriai transzformációkat szeretnénk közösen feldolgozni. 
+
 Heti rendszerességgel küldünk interaktív feladatokat, óraterv javaslatokat. Reméljük, hogy közösen fogjuk alakítani a tananyagot, ezért számítunk arra, hogy a résztvevők rendszeresen megosztják egymással a tapasztalataikat. 
 Az elkészített feladatok, óratervek hasznosak lehetnek a 8. és 9. évfolyamokon is. Elsősorban olyanok jelentkezését várjuk akik tanítanak ezeken az évfolyamokon, és meg tudják oldani, hogy az őszi és a téli szünet között foglalkozzanak a témakörrel.
 
