@@ -1,5 +1,5 @@
 ---
-hide: title
+title: Interaktív tanítás
 ---
 
 # Felhívás
