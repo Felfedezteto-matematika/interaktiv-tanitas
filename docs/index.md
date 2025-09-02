@@ -26,3 +26,7 @@ Az elkészített feladatok, óratervek hasznosak lehetnek a 8. és 9. évfolyamo
 A programról egy [részletesebb leírást](https://felfedezteto-matematika.github.io/interaktiv-tanitas/about.md) is találhatsz. Ha felkeltette az érdeklődésedet a kísérlet, akkor kérlek töltsd ki a [jelentkezési lapot](https://forms.gle/JC12DRATg5buoCRL6) 2025. szeptember 15-ig. Ha kérdésed van, akkor fordulj hozzánk bizalommal a juhasz.peter@renyi.hu emailcímen.
 
 A kísérlet során keletkezett anyagokat, tapasztalatokat szeretnénk megosztani az érdeklődő tanárokkal.
+
+Minden jelentkezőt szeretettel várunk:
+Babus Réka, Juhász Péter, Szász Réka, Szűcs Gábor, Varga Eszter
+
