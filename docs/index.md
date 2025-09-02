@@ -1,5 +1,5 @@
 ---
-title: Interaktív tanítás
+title: "Interaktív tanítás"
 ---
 
 # Felhívás
