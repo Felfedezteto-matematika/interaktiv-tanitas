@@ -19,7 +19,7 @@ A programban való részvételnek nem feltétele a felfedeztető módszere ismer
 
 Idén ősszel egy témakört, a geometriai transzformációkat szeretnénk közösen feldolgozni 7. évfolyamon. Heti rendszerességgel küldünk interaktív feladatokat, óraterv javaslatokat. Reméljük, hogy közösen fogjuk alakítani a tananyagot, ezért számítunk arra, hogy a résztvevők rendszeresen megosztják egymással a tapasztalataikat. 
 
-Elsősorban olyanok jelentkezését várjuk akik tanítanak ebben a korosztályban, és meg tudják oldani, hogy az őszi és a téli szünet között foglalkozzanak a témakörrel. Az elkészített feladatok, óratervek hasznosak lehetnek a 8. és 9. évfolyamokon is, tehát azok jelentkezését is fogadjuk, akik ebben a két évfolyamban tanítanak.
+Elsősorban olyanok jelentkezését várjuk akik tanítanak ebben a korosztályban, és meg tudják oldani, hogy az őszi és a téli szünet között foglalkozzanak a témakörrel. Az elkészített feladatok, óratervek hasznosak lehetnek a 8. és 9. évfolyamokon is, tehát azok jelentkezését is fogadjuk, akik ezen a két évfolyamon tanítanak.
 
 ## Részletek, jelentkezés
 
