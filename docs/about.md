@@ -1,4 +1,4 @@
-## Geometriai transzformációk
+# Geometriai transzformációk
 
 ### Kezdő találkozó
 A projekt elején szeretnénk egy közös, személyes találkozót szervezni októberben Budapesten. Ennek a pontos időpontját a résztvevők szavazatai alapján döntjük el.
