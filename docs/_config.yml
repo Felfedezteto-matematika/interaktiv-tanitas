@@ -15,7 +15,7 @@ show_footer: false          # alul semmi extra
 toc_label: "Információk"
 
 navigation:
-  - name: Kezdőlap
+  - name: Felhívás
     link: ./
     sublist:
       - name: Részletek
