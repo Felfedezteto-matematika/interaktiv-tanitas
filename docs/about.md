@@ -9,7 +9,7 @@ Az alkalom célja, hogy megismerjük egymást, és, hogy valamilyen képet adjun
 
 ### Közös tanítás
 
-A közös tanítás során heti rendszerességgel fogunk feladatokat, óravázlat javaslatokat küldeni. A feladatok egy részét igyekszünk könnyen felhasználható formában küldeni. Ez lehet egy online felület ([egy lehetséges példa](https://felfedezteto-matematika.github.io/interaktiv-tanitas/problems/hatszog-egy-tengellyel.html), ezek használatához elegendő, ha telefon van a diákoknál), de akár egy nyomtatható lap is.
+A közös tanítás során heti rendszerességgel fogunk feladatokat, óravázlat javaslatokat küldeni. A feladatok egy részét igyekszünk könnyen felhasználható formában küldeni. Ez lehet egy online felület (ennek használatához elegendő, ha telefon van a diákoknál, [egy kipróbálható példa](https://felfedezteto-matematika.github.io/interaktiv-tanitas/problems/hatszog-egy-tengellyel.html)), vagy akár egy nyomtatható lap is.
 
 Heti rendszerességgel szeretnénk a közös tapasztalatokat is megosztani, ebben számítunk a résztvevők aktív együttműködésére. A megosztás formájában szívesen alkalmazkodunk a résztvevők igényeihez.
 
