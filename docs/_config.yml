@@ -1,6 +1,7 @@
 title: Interaktív tanítás
 description: Matematikaoktatás felfedeztetően
 author: HUN-REN Rényi Alfréd Matematikai Kutatóintézet Szakmódszertani Osztálya
+logo: /images/logo-it.png
 
 plugins:
   - jekyll-remote-theme
