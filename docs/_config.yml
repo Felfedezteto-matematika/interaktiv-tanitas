@@ -11,6 +11,7 @@ show_sidebar: true
 show_dark_toggle: false     # nem jelenik meg a világos/sötét mód kapcsoló
 show_posts: false           # nem listázza a blogposztokat
 show_footer: false          # alul semmi extra
+show_github: false          # alul semmi extra
 
 toc_label: "Információk"
 
