@@ -3,3 +3,11 @@ description: Matematikaoktatás felfedeztetően
 plugins:
   - jekyll-remote-theme
 remote_theme: vaibhavvikas/jekyll-theme-minimalistic
+
+
+navigation:
+  - name: Kezdőlap
+    link: ./
+    sublist:
+      - name: Részletek
+        link: ./#about
