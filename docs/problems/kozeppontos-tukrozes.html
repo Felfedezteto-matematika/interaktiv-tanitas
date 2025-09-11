@@ -28,7 +28,7 @@
     <h1 class="text-2xl font-semibold text-slate-900 mb-4 text-center">Középpontos tükrözés</h1>
 
     <div class="bg-slate-50 p-4 rounded-lg shadow-inner mb-6 text-slate-700 text-center">
-        <p>A feladat, hogy megkeresd a P pont középpontosan tükrözött képét. Segítségül megadtunk egy háromszöget (feketével), és ennek a tükörképét (szürkével). Kattints a P pont tükörképének helyére!</p>
+        <p>A feladat, hogy minél pontosabban meghatározd a P pont középpontosan tükrözött képét. Segítségül megadtunk egy háromszöget (feketével), és ennek a tükörképét (szürkével). Kattints a P pont tükörképének helyére! Cél, hogy a tippjeid eltérésének átlaga legyen 30 egységnél kevesebb.</p>
     </div>
 
     <svg id="svgCanvas" class="w-full h-96 border border-slate-300 rounded-lg bg-slate-50 shadow-inner" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
@@ -36,8 +36,8 @@
     <button id="mainActionButton" class="mt-6 py-3 px-6 text-lg font-semibold rounded-lg shadow-md transition-all duration-200 ease-in-out bg-slate-300 text-slate-800 hover:bg-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">Következő feladvány</button>
 
     <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4 w-full">
-        <div class="flex flex-col items-center">
-            <div class="text-lg font-semibold text-slate-800 text-center mb-2">Tippek eltérései</div>
+        <div class="flex flex-col items-start">
+            <div class="text-lg font-semibold text-slate-800 text-left mb-2">Tippek eltérései</div>
             <div id="deviationBoxesWrapper" class="flex flex-wrap justify-center gap-2">
                 <div id="deviationBox0" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
                 <div id="deviationBox1" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
@@ -146,6 +146,52 @@
             }
         }
 
+        function draw100UnitsScale() {
+            const endX = 380;
+            const startX = endX - 100;
+            const startY = 380;
+            const endY = startY;
+
+            // Vonal
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", startX);
+            line.setAttribute("y1", startY);
+            line.setAttribute("x2", endX);
+            line.setAttribute("y2", endY);
+            line.setAttribute("stroke", "#475569");
+            line.setAttribute("stroke-width", "2");
+            svgCanvas.appendChild(line);
+
+            // Jelölők
+            const tick1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            tick1.setAttribute("x1", startX);
+            tick1.setAttribute("y1", startY - 5);
+            tick1.setAttribute("x2", startX);
+            tick1.setAttribute("y2", startY + 5);
+            tick1.setAttribute("stroke", "#475569");
+            tick1.setAttribute("stroke-width", "2");
+            svgCanvas.appendChild(tick1);
+
+            const tick2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            tick2.setAttribute("x1", endX);
+            tick2.setAttribute("y1", endY - 5);
+            tick2.setAttribute("x2", endX);
+            tick2.setAttribute("y2", endY + 5);
+            tick2.setAttribute("stroke", "#475569");
+            tick2.setAttribute("stroke-width", "2");
+            svgCanvas.appendChild(tick2);
+
+            // Szöveg
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", startX + 50);
+            text.setAttribute("y", startY - 10);
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("font-size", "12");
+            text.setAttribute("fill", "#475569");
+            text.textContent = "100 egység";
+            svgCanvas.appendChild(text);
+        }
+
         // --- Kirajzoló függvények ---
         function drawPuzzle() {
             clearCanvas();
@@ -153,6 +199,8 @@
             
             state.puzzleData = generateValidPoints();
             const { P, ABC, ABC_prime } = state.puzzleData;
+            
+            draw100UnitsScale();
 
             // Kezdő háromszög
             const pointsString = ABC.map(p => `${p.x},${p.y}`).join(' ');
@@ -189,26 +237,38 @@
             textP.textContent = "P";
             svgCanvas.appendChild(textP);
 
-            // A, B, C és A', B', C' feliratok
-            ABC.forEach((p, i) => {
-                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                text.setAttribute("x", p.x + (i === 2 ? 0 : 5));
-                text.setAttribute("y", p.y + (i === 2 ? 15 : 5));
-                text.setAttribute("fill", "#000000"); // black
-                text.setAttribute("font-size", "12");
-                text.setAttribute("text-anchor", i === 2 ? "middle" : "start");
-                text.textContent = String.fromCharCode(65 + i);
-                svgCanvas.appendChild(text);
+            // A, B, C és A', B', C' feliratok a szögfelezőkön kifelé
+            const labels = ["A", "B", "C"];
+            [ABC, ABC_prime].forEach((trianglePoints, triIndex) => {
+                const isPrime = triIndex === 1;
+                const strokeColor = isPrime ? "#808080" : "#000000";
 
-                const primeP = ABC_prime[i];
-                const primeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                primeText.setAttribute("x", primeP.x + (i === 2 ? 0 : 5));
-                primeText.setAttribute("y", primeP.y + (i === 2 ? 15 : 5));
-                primeText.setAttribute("fill", "#808080"); // gray
-                primeText.setAttribute("font-size", "12");
-                primeText.setAttribute("text-anchor", i === 2 ? "middle" : "start");
-                primeText.textContent = String.fromCharCode(65 + i) + "'";
-                svgCanvas.appendChild(primeText);
+                trianglePoints.forEach((p, i) => {
+                    // Számítsuk ki a háromszög súlypontját (centroid)
+                    const centroid = {
+                        x: (trianglePoints[0].x + trianglePoints[1].x + trianglePoints[2].x) / 3,
+                        y: (trianglePoints[0].y + trianglePoints[1].y + trianglePoints[2].y) / 3
+                    };
+                    
+                    const dx = p.x - centroid.x;
+                    const dy = p.y - centroid.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // A felirat helye a súlyponttól kifelé tolva
+                    const labelOffset = 20; 
+                    const labelX = p.x + (dx / dist) * labelOffset;
+                    const labelY = p.y + (dy / dist) * labelOffset;
+
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("x", labelX);
+                    text.setAttribute("y", labelY);
+                    text.setAttribute("fill", strokeColor);
+                    text.setAttribute("font-size", "12");
+                    text.setAttribute("text-anchor", "middle");
+                    text.setAttribute("dominant-baseline", "middle");
+                    text.textContent = labels[i] + (isPrime ? "'" : "");
+                    svgCanvas.appendChild(text);
+                });
             });
             
             gameStatusEl.textContent = `${state.currentPuzzle} / ${state.totalPuzzles}: Hol van a P pont tükörképe? Kattints a válaszhoz!`;
