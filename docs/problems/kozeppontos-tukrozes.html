@@ -20,6 +20,11 @@
         .point {
             cursor: pointer;
         }
+
+        /* ÚJ: Ezzel megakadályozzuk, hogy a kurzor megváltozzon a feliratok felett */
+        svg text {
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="font-sans flex flex-col items-center justify-center min-h-screen bg-slate-100 text-slate-800 p-4">
@@ -28,7 +33,7 @@
     <h1 class="text-2xl font-semibold text-slate-900 mb-4 text-center">Középpontos tükrözés</h1>
 
     <div class="bg-slate-50 p-4 rounded-lg shadow-inner mb-6 text-slate-700 text-center">
-        <p>A feladat, hogy minél pontosabban meghatározd a P pont középpontosan tükrözött képét. Segítségül megadtunk egy háromszöget (feketével), és ennek a tükörképét (szürkével). Kattints a P pont tükörképének helyére! Cél, hogy a tippjeid eltérésének átlaga legyen 30 egységnél kevesebb.</p>
+        <p>A feladat, hogy minél pontosabban meghatárold a P pont középpontosan tükrözött képét. Segítségül megadtunk egy háromszöget (feketével), és ennek a tükörképét (szürkével). Cél, hogy a tippjeid eltérésének átlaga kisebb legyen 25 egységnél.</p>
     </div>
 
     <svg id="svgCanvas" class="w-full h-96 border border-slate-300 rounded-lg bg-slate-50 shadow-inner" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
@@ -37,7 +42,7 @@
 
     <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4 w-full">
         <div class="flex flex-col items-start">
-            <div class="text-lg font-semibold text-slate-800 text-left mb-2">Tippek eltérései</div>
+            <div class="text-lg font-semibold text-slate-800 text-left mb-2">Tippek eltérései:</div>
             <div id="deviationBoxesWrapper" class="flex flex-wrap justify-center gap-2">
                 <div id="deviationBox0" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
                 <div id="deviationBox1" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-slate-100 border border-slate-300 rounded-md text-slate-600">--</div>
@@ -47,7 +52,7 @@
             </div>
         </div>
         <div class="flex flex-col items-center">
-            <div class="text-lg font-semibold text-slate-800 text-center mb-2">Átlag</div>
+            <div class="text-lg font-semibold text-slate-800 text-center mb-2">Átlag:</div>
             <div id="averageDeviationBox" class="w-16 h-10 flex items-center justify-center text-sm font-bold bg-blue-100 border border-blue-300 rounded-md text-blue-800">--</div>
         </div>
     </div>
@@ -74,6 +79,14 @@
         };
 
         // --- Segédfüggvények ---
+
+        // Új segédfüggvény a több attribútum beállításához
+        function setAttributes(el, attrs) {
+            for (const key in attrs) {
+                el.setAttribute(key, attrs[key]);
+            }
+        }
+
         function getRandomInt(min, max) {
             min = Math.ceil(min);
             max = Math.floor(max);
@@ -150,44 +163,51 @@
             const endX = 380;
             const startX = endX - 100;
             const startY = 380;
-            const endY = startY;
 
             // Vonal
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", startX);
-            line.setAttribute("y1", startY);
-            line.setAttribute("x2", endX);
-            line.setAttribute("y2", endY);
-            line.setAttribute("stroke", "#475569");
-            line.setAttribute("stroke-width", "2");
+            setAttributes(line, {
+                x1: startX,
+                y1: startY,
+                x2: endX,
+                y2: startY,
+                stroke: "#475569",
+                "stroke-width": "2"
+            });
             svgCanvas.appendChild(line);
 
             // Jelölők
             const tick1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            tick1.setAttribute("x1", startX);
-            tick1.setAttribute("y1", startY - 5);
-            tick1.setAttribute("x2", startX);
-            tick1.setAttribute("y2", startY + 5);
-            tick1.setAttribute("stroke", "#475569");
-            tick1.setAttribute("stroke-width", "2");
+            setAttributes(tick1, {
+                x1: startX,
+                y1: startY - 5,
+                x2: startX,
+                y2: startY + 5,
+                stroke: "#475569",
+                "stroke-width": "2"
+            });
             svgCanvas.appendChild(tick1);
 
             const tick2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            tick2.setAttribute("x1", endX);
-            tick2.setAttribute("y1", endY - 5);
-            tick2.setAttribute("x2", endX);
-            tick2.setAttribute("y2", endY + 5);
-            tick2.setAttribute("stroke", "#475569");
-            tick2.setAttribute("stroke-width", "2");
+            setAttributes(tick2, {
+                x1: endX,
+                y1: startY - 5,
+                x2: endX,
+                y2: startY + 5,
+                stroke: "#475569",
+                "stroke-width": "2"
+            });
             svgCanvas.appendChild(tick2);
 
             // Szöveg
             const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute("x", startX + 50);
-            text.setAttribute("y", startY - 10);
-            text.setAttribute("text-anchor", "middle");
-            text.setAttribute("font-size", "12");
-            text.setAttribute("fill", "#475569");
+            setAttributes(text, {
+                x: startX + 50,
+                y: startY - 10,
+                "text-anchor": "middle",
+                "font-size": "12",
+                fill: "#475569"
+            });
             text.textContent = "100 egység";
             svgCanvas.appendChild(text);
         }
@@ -205,35 +225,43 @@
             // Kezdő háromszög
             const pointsString = ABC.map(p => `${p.x},${p.y}`).join(' ');
             const triangle = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-            triangle.setAttribute("points", pointsString);
-            triangle.setAttribute("fill", "none");
-            triangle.setAttribute("stroke", "#000000"); // black
-            triangle.setAttribute("stroke-width", "2");
+            setAttributes(triangle, {
+                points: pointsString,
+                fill: "none",
+                stroke: "#000000",
+                "stroke-width": "2"
+            });
             svgCanvas.appendChild(triangle);
 
             // Tükörkép háromszög
             const primePointsString = ABC_prime.map(p => `${p.x},${p.y}`).join(' ');
             const reflectedTriangle = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-            reflectedTriangle.setAttribute("points", primePointsString);
-            reflectedTriangle.setAttribute("fill", "none");
-            reflectedTriangle.setAttribute("stroke", "#808080"); // gray
-            reflectedTriangle.setAttribute("stroke-width", "2");
-            reflectedTriangle.setAttribute("stroke-dasharray", "5,5");
+            setAttributes(reflectedTriangle, {
+                points: primePointsString,
+                fill: "none",
+                stroke: "#808080",
+                "stroke-width": "2",
+                "stroke-dasharray": "5,5"
+            });
             svgCanvas.appendChild(reflectedTriangle);
             
             // P pont és felirat
             const pointP = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            pointP.setAttribute("cx", P.x);
-            pointP.setAttribute("cy", P.y);
-            pointP.setAttribute("r", 4);
-            pointP.setAttribute("fill", "#1D4ED8"); // dark blue
+            setAttributes(pointP, {
+                cx: P.x,
+                cy: P.y,
+                r: 4,
+                fill: "#1D4ED8"
+            });
             svgCanvas.appendChild(pointP);
             
             const textP = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            textP.setAttribute("x", P.x + 5);
-            textP.setAttribute("y", P.y + 5);
-            textP.setAttribute("fill", "#1D4ED8"); // dark blue
-            textP.setAttribute("font-size", "12");
+            setAttributes(textP, {
+                x: P.x + 5,
+                y: P.y + 5,
+                fill: "#1D4ED8",
+                "font-size": "12"
+            });
             textP.textContent = "P";
             svgCanvas.appendChild(textP);
 
@@ -260,12 +288,14 @@
                     const labelY = p.y + (dy / dist) * labelOffset;
 
                     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    text.setAttribute("x", labelX);
-                    text.setAttribute("y", labelY);
-                    text.setAttribute("fill", strokeColor);
-                    text.setAttribute("font-size", "12");
-                    text.setAttribute("text-anchor", "middle");
-                    text.setAttribute("dominant-baseline", "middle");
+                    setAttributes(text, {
+                        x: labelX,
+                        y: labelY,
+                        fill: strokeColor,
+                        "font-size": "12",
+                        "text-anchor": "middle",
+                        "dominant-baseline": "middle"
+                    });
                     text.textContent = labels[i] + (isPrime ? "'" : "");
                     svgCanvas.appendChild(text);
                 });
@@ -285,51 +315,63 @@
             
             // Hozzáadjuk a megoldást és a tengelyt
             const solutionPoint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            solutionPoint.setAttribute("cx", P_prime.x);
-            solutionPoint.setAttribute("cy", P_prime.y);
-            solutionPoint.setAttribute("r", 5);
-            solutionPoint.setAttribute("fill", "#22C55E"); // green
+            setAttributes(solutionPoint, {
+                cx: P_prime.x,
+                cy: P_prime.y,
+                r: 5,
+                fill: "#22C55E"
+            });
             svgCanvas.appendChild(solutionPoint);
 
             const centerPointO = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            centerPointO.setAttribute("cx", O.x);
-            centerPointO.setAttribute("cy", O.y);
-            centerPointO.setAttribute("r", 5);
-            centerPointO.setAttribute("fill", "#EF4444"); // red
+            setAttributes(centerPointO, {
+                cx: O.x,
+                cy: O.y,
+                r: 5,
+                fill: "#EF4444"
+            });
             svgCanvas.appendChild(centerPointO);
 
             const centerTextO = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            centerTextO.setAttribute("x", O.x + 10);
-            centerTextO.setAttribute("y", O.y);
-            centerTextO.setAttribute("fill", "#EF4444"); // red
-            centerTextO.setAttribute("font-size", "12");
+            setAttributes(centerTextO, {
+                x: O.x + 10,
+                y: O.y,
+                fill: "#EF4444",
+                "font-size": "12"
+            });
             centerTextO.textContent = "O";
             svgCanvas.appendChild(centerTextO);
             
             const linePP = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            linePP.setAttribute("x1", P.x);
-            linePP.setAttribute("y1", P.y);
-            linePP.setAttribute("x2", P_prime.x);
-            linePP.setAttribute("y2", P_prime.y);
-            linePP.setAttribute("stroke", "#475569");
-            linePP.setAttribute("stroke-dasharray", "2,2");
+            setAttributes(linePP, {
+                x1: P.x,
+                y1: P.y,
+                x2: P_prime.x,
+                y2: P_prime.y,
+                stroke: "#475569",
+                "stroke-dasharray": "2,2"
+            });
             svgCanvas.appendChild(linePP);
             
             // Animáció
             const startPointsString = state.puzzleData.ABC.map(p => `${p.x},${p.y}`).join(' ');
             const endPointsString = state.puzzleData.ABC_prime.map(p => `${p.x},${p.y}`).join(' ');
             const animTriangle = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-            animTriangle.setAttribute("points", startPointsString);
-            animTriangle.setAttribute("fill", "none");
-            animTriangle.setAttribute("stroke", "#000000"); // black
-            animTriangle.setAttribute("stroke-width", "2");
+            setAttributes(animTriangle, {
+                points: startPointsString,
+                fill: "none",
+                stroke: "#000000",
+                "stroke-width": "2"
+            });
             svgCanvas.appendChild(animTriangle);
 
             const animPointP = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            animPointP.setAttribute("cx", P.x);
-            animPointP.setAttribute("cy", P.y);
-            animPointP.setAttribute("r", 4);
-            animPointP.setAttribute("fill", "#1D4ED8"); // dark blue
+            setAttributes(animPointP, {
+                cx: P.x,
+                cy: P.y,
+                r: 4,
+                fill: "#1D4ED8"
+            });
             svgCanvas.appendChild(animPointP);
 
             const duration = 2500;
@@ -370,14 +412,15 @@
 
         // --- Kijelzők frissítése ---
         function updateDisplays() {
-            // A feltétel a játék végének ellenőrzésére: utolsó feladvány és megtörtént a tipp.
-            if (state.currentPuzzle === state.totalPuzzles && state.isGuessMade) {
+            const isGameEnd = state.currentPuzzle === state.totalPuzzles && state.isGuessMade;
+
+            if (isGameEnd) {
                 gameStatusEl.textContent = "Vége a játéknak!";
                 mainActionButton.textContent = "Új játék";
                 mainActionButton.classList.remove('bg-slate-300', 'hover:bg-slate-400');
                 mainActionButton.classList.add('bg-green-500', 'hover:bg-green-600', 'text-white');
             } else {
-                gameStatusEl.textContent = `Játék ${state.currentPuzzle} / ${state.totalPuzzles}`;
+                gameStatusEl.textContent = `${state.currentPuzzle} / ${state.totalPuzzles} forduló`;
                 mainActionButton.textContent = "Következő feladvány";
                 mainActionButton.classList.remove('bg-green-500', 'hover:bg-green-600', 'text-white');
                 mainActionButton.classList.add('bg-slate-300', 'hover:bg-slate-400');
@@ -386,15 +429,32 @@
             if (state.allDistances.length > 0) {
                 const totalDistance = state.allDistances.reduce((sum, current) => sum + current, 0);
                 const averageDistance = totalDistance / state.allDistances.length;
-                averageDeviationBox.textContent = averageDistance.toFixed(2);
+                averageDeviationBox.textContent = averageDistance.toFixed(1);
+
+                // ÚJ: Háttérszín ellenőrzése és módosítása az utolsó feladvány után
+                if (isGameEnd) {
+                    if (averageDistance < 25) {
+                        // Siker esetén a háttér zöldre vált
+                        averageDeviationBox.classList.remove('bg-blue-100', 'border-blue-300', 'text-blue-800', 'bg-red-200', 'border-red-400', 'text-red-800');
+                        averageDeviationBox.classList.add('bg-green-200', 'border-green-400', 'text-green-800');
+                        gameStatusEl.textContent += " Gratulálunk, pontosan tippeltél! 👍";
+                    }
+                } else {
+                    // Játék közben visszaállítjuk a kék színt, ha szükséges
+                    averageDeviationBox.classList.remove('bg-green-200', 'border-green-400', 'text-green-800', 'bg-red-200', 'border-red-400', 'text-red-800');
+                    averageDeviationBox.classList.add('bg-blue-100', 'border-blue-300', 'text-blue-800');
+                }
             } else {
                 averageDeviationBox.textContent = `--`;
+                // Játék kezdetén visszaállítjuk a kék színt
+                averageDeviationBox.classList.remove('bg-green-200', 'border-green-400', 'text-green-800', 'bg-red-200', 'border-red-400', 'text-red-800');
+                averageDeviationBox.classList.add('bg-blue-100', 'border-blue-300', 'text-blue-800');
             }
 
             for (let i = 0; i < state.totalPuzzles; i++) {
                 const box = document.getElementById(`deviationBox${i}`);
                 if (i < state.allDistances.length) {
-                    box.textContent = state.allDistances[i].toFixed(2);
+                    box.textContent = state.allDistances[i].toFixed(1);
                 } else {
                     box.textContent = `--`;
                 }
@@ -419,20 +479,24 @@
 
             // Tipped pontjának megjelenítése
             const guessedCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            guessedCircle.setAttribute("cx", click_x);
-            guessedCircle.setAttribute("cy", click_y);
-            guessedCircle.setAttribute("r", 6); // Nagyobb sugár a jobb láthatóságért
-            guessedCircle.setAttribute("fill", "#3B82F6"); // blue
+            setAttributes(guessedCircle, {
+                cx: click_x,
+                cy: click_y,
+                r: 6,
+                fill: "#3B82F6"
+            });
             guessedCircle.classList.add("guessed-point");
             svgCanvas.appendChild(guessedCircle);
 
             const deviationLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            deviationLine.setAttribute("x1", click_x);
-            deviationLine.setAttribute("y1", click_y);
-            deviationLine.setAttribute("x2", P_prime.x);
-            deviationLine.setAttribute("y2", P_prime.y);
-            deviationLine.setAttribute("stroke", "#475569");
-            deviationLine.setAttribute("stroke-dasharray", "2,2");
+            setAttributes(deviationLine, {
+                x1: click_x,
+                y1: click_y,
+                x2: P_prime.x,
+                y2: P_prime.y,
+                stroke: "#475569",
+                "stroke-dasharray": "2,2"
+            });
             svgCanvas.appendChild(deviationLine);
 
             const distance = Math.sqrt(Math.pow(click_x - P_prime.x, 2) + Math.pow(click_y - P_prime.y, 2));
