@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplán tükrözés</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+        :root {
+            --bg: #f5f5f5;
+            --fg: #111111;
+            --muted: #666666;
+            --green: #4CAF50;
+            --red: #F44336;
+            --border: #e0e0e0;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--fg);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px; /* Reduced padding */
+        }
+
+        .container {
+            background-color: var(--bg);
+            padding: 2rem; /* Reduced padding */
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px; /* Reduced max-width */
+            text-align: center;
+        }
+
+        h1, h2 {
+            color: var(--fg);
+            font-weight: 600;
+        }
+        
+        h2 {
+            font-size: 1.15rem; /* Reduced font size */
+            margin-top: 0;
+            margin-bottom: 1rem; /* Reduced margin */
+        }
+
+        p {
+            color: var(--muted);
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        #gameCanvas {
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background-color: var(--bg);
+            cursor: crosshair;
+            margin: 0 auto;
+            display: block;
+            width: 500px; /* Reduced width */
+            height: 350px; /* Reduced height */
+        }
+        
+        .game-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .top-controls {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        
+        .round-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            padding: 0.5rem;
+            margin-right: 1rem;
+        }
+        
+        .round-navigation .toggle-btn {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--fg);
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            transition: all 0.3s;
+        }
+
+        .round-navigation .toggle-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .round-navigation .toggle-btn.active {
+            background-color: var(--green);
+            color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .feedback-box {
+            margin-top: 1.5rem;
+            min-height: 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .correct {
+            color: var(--green);
+        }
+
+        .incorrect {
+            color: var(--red);
+        }
+
+        .unit-info {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-top: 1rem;
+        }
+        
+        .unit-line {
+            display: inline-block;
+            width: 50px;
+            height: 2px;
+            background-color: var(--fg);
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 1rem; /* Reduced margin */
+        }
+
+        button.action-btn {
+            background-color: var(--fg);
+            color: var(--bg);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+        
+        button.action-btn:hover {
+            background-color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Duplán tükrözés</h1>
+        <div id="task-container">
+            <h2 id="task-title">A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.</h2>
+            <div class="game-controls">
+                <div class="top-controls">
+                    <div id="round-navigation" class="round-navigation"></div>
+                    <div class="unit-info">
+                        1 egység távolság: <span class="unit-line"></span>
+                    </div>
+                </div>
+            </div>
+            <canvas id="gameCanvas" width="500" height="350"></canvas>
+            <div id="feedback" class="feedback-box"></div>
+            <div class="btn-container">
+                <button id="nextProblemBtn" class="action-btn" style="display: none;">Következő feladat</button>
+                <button id="retryBtn" class="action-btn" style="display: none;">Nézzünk egy hasonló feladatot!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const feedbackEl = document.getElementById('feedback');
+            const roundNavigationEl = document.getElementById('round-navigation');
+            const nextProblemBtn = document.getElementById('nextProblemBtn');
+            const retryBtn = document.getElementById('retryBtn');
+            const taskTitleEl = document.getElementById('task-title');
+
+            // --- Game State Variables ---
+            const tolerance = 30; // Increased tolerance in pixels
+            const totalRounds = 5;
+            let currentRound = 1;
+            let correctPoint;
+            let pPoint;
+            let redLine, blueLine;
+            let isRoundFinished = false;
+
+            // --- Game Logic Functions ---
+            
+            // Generate a random point within a constrained area of the canvas
+            function generateRandomPoint() {
+                const margin = 50;
+                return {
+                    x: Math.random() * (canvas.width - 2 * margin) + margin,
+                    y: Math.random() * (canvas.height - 2 * margin) + margin
+                };
+            }
+
+            // Generate two random parallel lines centered on the canvas
+            function generateParallelLines() {
+                const slope = Math.tan(Math.random() * Math.PI);
+                const midHeight = canvas.height / 2;
+                const minInterceptOffset = -50;
+                const maxInterceptOffset = 50;
+                const interceptMid = midHeight + Math.random() * (maxInterceptOffset - minInterceptOffset) + minInterceptOffset;
+                const separation = Math.random() * 80 + 40;
+                
+                return [
+                    { m: slope, c: interceptMid - separation / 2 },
+                    { m: slope, c: interceptMid + separation / 2 }
+                ];
+            }
+
+            // Function to check if a point is between two parallel lines
+            function isPointBetweenLines(point, line1, line2) {
+                const signedDistance1 = (line1.m * point.x - point.y + line1.c) / Math.sqrt(line1.m * line1.m + 1);
+                const signedDistance2 = (line2.m * point.x - point.y + line2.c) / Math.sqrt(line2.m * line2.m + 1);
+                
+                return signedDistance1 * signedDistance2 < 0;
+            }
+
+            // Function to reflect a point across a line
+            function reflectPoint(point, line) {
+                const a = line.m;
+                const b = -1;
+                const c = line.c;
+                const denominator = a * a + b * b;
+                const numerator = a * point.x + b * point.y + c;
+                
+                const reflectedX = point.x - 2 * a * numerator / denominator;
+                const reflectedY = point.y - 2 * b * numerator / denominator;
+                
+                return { x: reflectedX, y: reflectedY };
+            }
+            
+            // Function to calculate the distance between two points
+            function getDistance(p1, p2) {
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            // Function to calculate the distance from a point to a line
+            function getDistanceToLine(point, line) {
+                return Math.abs(line.m * point.x - point.y + line.c) / Math.sqrt(line.m * line.m + 1);
+            }
+
+            // Draw a point on the canvas
+            function drawPoint(point, label, color = '#111', radius = 6) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.font = '16px Inter';
+                // Adjusting the label position to be closer to the point
+                ctx.fillText(label, point.x + 8, point.y - 8);
+            }
+            
+            // Draw a line on the canvas
+            function drawLine(line, color = '#333') {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                const x1 = 0;
+                const y1 = line.m * x1 + line.c;
+                const x2 = canvas.width;
+                const y2 = line.m * x2 + line.c;
+                
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            // Function to display an arrow showing translation
+            function drawTranslationArrow(start, end, color = '#888') {
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+            
+                const angle = Math.atan2(end.y - start.y, end.x - start.x);
+                const arrowSize = 8;
+                ctx.beginPath();
+                ctx.moveTo(end.x, end.y);
+                ctx.lineTo(end.x - arrowSize * Math.cos(angle - Math.PI / 6), end.y - arrowSize * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(end.x - arrowSize * Math.cos(angle + Math.PI / 6), end.y - arrowSize * Math.sin(angle + Math.PI / 6));
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Check if a point is within the canvas bounds
+            function isPointInBounds(point) {
+                const margin = 10;
+                return point.x > margin && point.x < canvas.width - margin &&
+                       point.y > margin && point.y < canvas.height - margin;
+            }
+
+            // Set up a new round
+            function setupNewRound(round) {
+                currentRound = round;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                let pPrime;
+                let isSetupValid = false;
+
+                while (!isSetupValid) {
+                    let lines = generateParallelLines();
+                    let separation = getDistance(
+                        { x: 0, y: lines[0].c }, 
+                        { x: 0, y: lines[1].c }
+                    );
+                    
+                    pPoint = generateRandomPoint();
+
+                    if (getDistanceToLine(pPoint, lines[0]) < getDistanceToLine(pPoint, lines[1])) {
+                        redLine = lines[0];
+                        blueLine = lines[1];
+                    } else {
+                        redLine = lines[1];
+                        blueLine = lines[0];
+                    }
+
+                    switch(currentRound) {
+                        case 1:
+                        case 2:
+                            if (!isPointBetweenLines(pPoint, redLine, blueLine) && getDistanceToLine(pPoint, redLine) <= separation) {
+                                pPrime = reflectPoint(pPoint, redLine);
+                                correctPoint = reflectPoint(pPrime, blueLine);
+                                isSetupValid = isPointInBounds(pPoint) && isPointInBounds(pPrime) && isPointInBounds(correctPoint);
+                            }
+                            break;
+                        case 3:
+                            if (!isPointBetweenLines(pPoint, redLine, blueLine) && getDistanceToLine(pPoint, redLine) > separation) {
+                                pPrime = reflectPoint(pPoint, redLine);
+                                correctPoint = reflectPoint(pPrime, blueLine);
+                                isSetupValid = isPointInBounds(pPoint) && isPointInBounds(pPrime) && isPointInBounds(correctPoint);
+                            }
+                            break;
+                        case 4:
+                            if (isPointBetweenLines(pPoint, redLine, blueLine)) {
+                                pPrime = reflectPoint(pPoint, redLine);
+                                correctPoint = reflectPoint(pPrime, blueLine);
+                                isSetupValid = isPointInBounds(pPoint) && isPointInBounds(pPrime) && isPointInBounds(correctPoint);
+                            }
+                            break;
+                        case 5:
+                            pPrime = reflectPoint(pPoint, blueLine);
+                            correctPoint = reflectPoint(pPrime, redLine);
+                            isSetupValid = isPointInBounds(pPoint) && isPointInBounds(pPrime) && isPointInBounds(correctPoint);
+                            break;
+                    }
+                }
+
+                if (currentRound === 5) {
+                    taskTitleEl.textContent = "A P pontot tükrözzük a kék, majd a piros egyenesre. Helyezd el az így kapott P'' pontot a síkon.";
+                } else {
+                    taskTitleEl.textContent = "A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.";
+                }
+
+                updateRoundToggle();
+
+                drawLine(redLine, 'red');
+                drawLine(blueLine, 'blue');
+                drawPoint(pPoint, 'P');
+                
+                feedbackEl.textContent = '';
+                feedbackEl.classList.remove('correct', 'incorrect');
+                nextProblemBtn.style.display = 'none';
+                retryBtn.style.display = 'none';
+                canvas.style.cursor = 'crosshair';
+                isRoundFinished = false;
+            }
+
+            function handleGuess(event) {
+                if (isRoundFinished) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const guessPoint = {
+                    x: event.clientX - rect.left,
+                    y: event.clientY - rect.top
+                };
+
+                const distance = getDistance(guessPoint, correctPoint);
+                const distanceInUnits = (distance / 50).toFixed(2);
+                
+                drawPoint(guessPoint, "P'' (Te)", 'blue');
+                drawPoint(correctPoint, "P'' (Helyes)", 'green');
+                drawTranslationArrow(pPoint, correctPoint, 'green');
+
+                if (distance <= tolerance) {
+                    feedbackEl.textContent = `Helyes válasz! Pontos távolság: ${distanceInUnits} egység`;
+                    feedbackEl.classList.add('correct');
+                    isRoundFinished = true;
+                    
+                    nextProblemBtn.style.display = 'block';
+                    canvas.style.cursor = 'default';
+                } else {
+                    feedbackEl.textContent = `Próbálkozz újra egy hasonló feladattal! A tipp és a helyes válasz között a távolság: ${distanceInUnits} egység`;
+                    feedbackEl.classList.add('incorrect');
+                    retryBtn.style.display = 'block';
+                    canvas.style.cursor = 'default';
+                }
+            }
+            
+            function buildRoundToggle() {
+                for (let i = 1; i <= totalRounds; i++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = i;
+                    btn.className = 'toggle-btn';
+                    btn.addEventListener('click', () => setupNewRound(i));
+                    roundNavigationEl.appendChild(btn);
+                }
+            }
+
+            function updateRoundToggle() {
+                const buttons = roundNavigationEl.querySelectorAll('.toggle-btn');
+                buttons.forEach((btn, index) => {
+                    if (index + 1 === currentRound) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            canvas.addEventListener('click', handleGuess);
+            
+            nextProblemBtn.addEventListener('click', () => {
+                if (currentRound < totalRounds) {
+                    currentRound++;
+                }
+                setupNewRound(currentRound);
+            });
+
+            retryBtn.addEventListener('click', () => {
+                setupNewRound(currentRound);
+            });
+            
+            buildRoundToggle();
+            setupNewRound(1);
+        };
+    </script>
+</body>
+</html>
