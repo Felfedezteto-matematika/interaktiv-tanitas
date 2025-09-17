@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ponttranszformációk I.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        canvas {
+            background-color: #ffffff;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        :root {
+            --bg: #ffffff;
+            --fg: #1f2937;
+            --border: #d1d5db;
+            --green: #4ade80;
+            --green-dark: #22c55e;
+            --transition: 0.2s ease;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .button:hover {
+            border-color: #9ca3af;
+            background-color: #f5f5f5;
+        }
+        .button:active {
+            transform: scale(0.98);
+        }
+
+        .task-toggle {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+        .task-toggle .button {
+            padding: 6px 12px;
+            height: 40px;
+            width: 40px;
+        }
+        .task-toggle .button.active {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+        .task-toggle .button.active:hover {
+            background: var(--green-dark);
+            border-color: var(--green-dark);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl w-full text-center">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Ponttranszformációk I.</h1>
+        <p class="text-gray-600 mb-6">Kattints a vászonra, és nézd meg, hogyan transzformálódik a kiválasztott pont!</p>
+
+        <canvas id="transformCanvas" class="rounded-xl" width="600" height="600"></canvas>
+
+        <div class="mt-6 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-500 font-semibold uppercase">P pont:</p>
+                <div id="originalPoint" class="text-lg font-bold text-blue-600 mt-1">-</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-500 font-semibold uppercase">P' pont:</p>
+                <div id="transformedPoint" class="text-lg font-bold text-red-600 mt-1">-</div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-center mt-6 space-x-4">
+            <button id="prevBtn" class="button">Előző feladat</button>
+            <button id="nextBtn" class="button">Következő feladat</button>
+            <div class="flex items-center space-x-2">
+                <span class="text-lg text-gray-600 font-semibold"></span>
+                <div class="task-toggle">
+                    <button class="button" data-task-index="0">1</button>
+                    <button class="button" data-task-index="1">2</button>
+                    <button class="button" data-task-index="2">3</button>
+                    <button class="button" data-task-index="3">4</button>
+                    <button class="button" data-task-index="4">5</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('transformCanvas');
+        const ctx = canvas.getContext('2d');
+        const originalPointEl = document.getElementById('originalPoint');
+        const transformedPointEl = document.getElementById('transformedPoint');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const taskButtons = document.querySelectorAll('.task-toggle .button');
+
+        // Define individual transformation functions
+        const transformation1 = (x, y) => ({ x: x + 1, y: y });
+
+        const transformation2 = (x, y) => ({ x: x - 2, y: y - 3 });
+
+        const transformation3 = (x, y) => ({ x: x, y: 1 });
+
+        const transformation4 = (x, y) => ({ x: -x, y: -y });
+
+        const transformation5 = (x, y) => {
+            if (x >= 0 && y >= 0) { // Quadrant I
+                return { x: x + 1, y: y + 1 };
+            } else if (x < 0 && y >= 0) { // Quadrant II
+                return { x: x - 1, y: y + 1 };
+            } else if (x < 0 && y < 0) { // Quadrant III
+                return { x: x - 1, y: y - 1 };
+            } else { // Quadrant IV
+                return { x: x + 1, y: y - 1 };
+            } 
+        };
+
+        // Map task indices to the corresponding functions
+        const transformations = [
+            transformation1,
+            transformation2,
+            transformation3,
+            transformation4,
+            transformation5,
+        ];
+
+        let currentTaskIndex = 0;
+        const originX = canvas.width / 2;
+        const originY = canvas.height / 2;
+        const scale = 50;
+        let originalPoint = null;
+        let transformedPoint = null;
+        let animationStartTime = null;
+        const animationDuration = 500;
+
+        // Function to select a task and update the UI
+        function selectTask(index) {
+            currentTaskIndex = index;
+            resetCanvas();
+            updateTaskButtons();
+        }
+
+        // Resets the canvas and points
+        function resetCanvas() {
+            originalPoint = null;
+            transformedPoint = null;
+            originalPointEl.textContent = '(--, --)';
+            transformedPointEl.textContent = '(--, --)';
+            drawGrid();
+        }
+
+        // Updates the style of the task buttons
+        function updateTaskButtons() {
+            taskButtons.forEach(button => {
+                const taskIndex = parseInt(button.dataset.taskIndex);
+                if (taskIndex === currentTaskIndex) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        // Draws the coordinate grid
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#e5e7eb';
+            for (let i = 0; i < canvas.width; i += scale) {
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+            }
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#9ca3af';
+            ctx.lineWidth = 2;
+            ctx.moveTo(originX, 0);
+            ctx.lineTo(originX, canvas.height);
+            ctx.moveTo(0, originY);
+            ctx.lineTo(canvas.width, originY);
+            ctx.stroke();
+
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '12px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = -canvas.width / 2 / scale; i <= canvas.width / 2 / scale; i++) {
+                if (i !== 0) {
+                    ctx.fillText(i, originX + i * scale, originY + 5);
+                }
+            }
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'right';
+            for (let i = -canvas.height / 2 / scale; i <= canvas.height / 2 / scale; i++) {
+                if (i !== 0) {
+                    ctx.fillText(-i, originX - 5, originY + i * scale);
+                }
+            }
+        }
+
+        // Draws a point on the canvas
+        function drawPoint(point, color, label, radius) {
+            const screenX = originX + point.x * scale;
+            const screenY = originY - point.y * scale;
+
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            if (label) {
+                ctx.fillStyle = '#1f2937';
+                ctx.font = '14px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(label, screenX, screenY - 10);
+            }
+        }
+
+        // Animation loop for the P' point fade-in effect
+        function animatePPrime() {
+            const elapsed = performance.now() - animationStartTime;
+            const progress = Math.min(elapsed / animationDuration, 1);
+            const currentRadius = 6 * progress;
+            const label = progress === 1 ? "P'" : null;
+
+            drawGrid();
+            if (originalPoint) {
+                drawPoint(originalPoint, '#3b82f6', 'P', 6);
+            }
+            
+            if (progress > 0) {
+                drawPoint(transformedPoint, '#ef4444', label, currentRadius);
+            }
+            
+            if (progress < 1) {
+                requestAnimationFrame(animatePPrime);
+            }
+        }
+
+        // Handles click events on the canvas
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const clickY = event.clientY - rect.top;
+
+            // Convert screen coordinates to mathematical coordinates
+            originalPoint = {
+                x: (clickX - originX) / scale,
+                y: -(clickY - originY) / scale
+            };
+            
+            // Apply the current transformation based on the task index
+            const currentTransformation = transformations[currentTaskIndex];
+            transformedPoint = currentTransformation(originalPoint.x, originalPoint.y);
+            
+            // Update the coordinates on the UI
+            originalPointEl.textContent = `(${originalPoint.x.toFixed(2)}, ${originalPoint.y.toFixed(2)})`;
+            transformedPointEl.textContent = `(${transformedPoint.x.toFixed(2)}, ${transformedPoint.y.toFixed(2)})`;
+            
+            // Start the animation
+            animationStartTime = performance.now();
+            animatePPrime();
+        });
+
+        // Event listener for the 'Previous' button
+        prevBtn.addEventListener('click', () => {
+            let newIndex = currentTaskIndex - 1;
+            if (newIndex < 0) {
+                newIndex = transformations.length - 1;
+            }
+            selectTask(newIndex);
+        });
+
+        // Event listener for the 'Next' button
+        nextBtn.addEventListener('click', () => {
+            let newIndex = currentTaskIndex + 1;
+            if (newIndex >= transformations.length) {
+                newIndex = 0;
+            }
+            selectTask(newIndex);
+        });
+
+        // Event listeners for the numbered task buttons
+        taskButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const index = parseInt(button.dataset.taskIndex);
+                selectTask(index);
+            });
+        });
+
+        // Initial setup
+        resetCanvas();
+        updateTaskButtons();
+
+    </script>
+</body>
+</html>
