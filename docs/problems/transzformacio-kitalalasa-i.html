@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transzformáció kitalálása I.</title>
+    <title>Transzformációk kitalálása I.</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
@@ -71,17 +71,71 @@
             background: var(--green-dark);
             border-color: var(--green-dark);
         }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 28px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 28px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #22c55e;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
 
-    <div class="bg-white p-8 rounded-lg shadow-md max-w-2xl w-full text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Transzformáció kitalálása I.</h1>
+    <div class="bg-white p-4 sm:p-8 rounded-lg shadow-md max-w-2xl w-full text-center">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Transzformációk kitalálása I.</h1>
         <p class="text-gray-600 mb-6">Kattints a vászonra, és nézd meg, hogyan transzformálódik a kiválasztott pont!</p>
 
-        <canvas id="transformCanvas" class="rounded-xl" width="600" height="600"></canvas>
+        <canvas id="transformCanvas" class="rounded-xl w-full aspect-square"></canvas>
 
-        <div class="mt-6 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+        <div class="flex items-center justify-center mt-6">
+            <div class="toggle-container">
+                <span class="text-gray-600 text-sm">Előzmények mutatása</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="historyToggle" unchecked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="mt-6 flex flex-wrap justify-center space-x-4">
             <div class="p-4 bg-gray-50 rounded-lg">
                 <p class="text-sm text-gray-500 font-semibold uppercase">P pont:</p>
                 <div id="originalPoint" class="text-lg font-bold text-blue-600 mt-1">-</div>
@@ -92,7 +146,7 @@
             </div>
         </div>
 
-        <div class="flex items-center justify-center mt-6 space-x-4">
+        <div class="flex flex-wrap items-center justify-center mt-6 space-x-2 space-y-2 sm:space-x-4 sm:space-y-0">
             <button id="prevBtn" class="button">Előző feladat</button>
             <button id="nextBtn" class="button">Következő feladat</button>
             <div class="flex items-center space-x-2">
@@ -106,6 +160,7 @@
                 </div>
             </div>
         </div>
+        
     </div>
 
     <script>
@@ -116,16 +171,13 @@
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         const taskButtons = document.querySelectorAll('.task-toggle .button');
+        const historyToggle = document.getElementById('historyToggle');
 
         // Define individual transformation functions
         const transformation1 = (x, y) => ({ x: x + 1, y: y });
-
         const transformation2 = (x, y) => ({ x: x - 2, y: y - 3 });
-
         const transformation3 = (x, y) => ({ x: x, y: 1 });
-
         const transformation4 = (x, y) => ({ x: -x, y: -y });
-
         const transformation5 = (x, y) => {
             if (x >= 0 && y >= 0) { // Quadrant I
                 return { x: x + 1, y: y + 1 };
@@ -148,28 +200,32 @@
         ];
 
         let currentTaskIndex = 0;
-        const originX = canvas.width / 2;
-        const originY = canvas.height / 2;
-        const scale = 50;
+        let originX, originY, scale;
         let originalPoint = null;
         let transformedPoint = null;
         let animationStartTime = null;
         const animationDuration = 500;
+        let history = []; // To store past points
 
-        // Function to select a task and update the UI
-        function selectTask(index) {
-            currentTaskIndex = index;
-            resetCanvas();
-            updateTaskButtons();
+        // A vászon méretének beállítása és az alapkoordináták újraszámolása
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetWidth; // A canvas mindig négyzetes lesz
+            originX = canvas.width / 2;
+            originY = canvas.height / 2;
+            // A skálát dinamikusan számoljuk, hogy az egységek arányosak maradjanak
+            scale = canvas.width / 12; // 12 egység a teljes szélesség, mindkét oldalon 6
+            draw();
         }
 
         // Resets the canvas and points
         function resetCanvas() {
+            console.log('Vászon nullázása.');
             originalPoint = null;
             transformedPoint = null;
             originalPointEl.textContent = '(--, --)';
             transformedPointEl.textContent = '(--, --)';
-            drawGrid();
+            draw();
         }
 
         // Updates the style of the task buttons
@@ -213,14 +269,14 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             for (let i = -canvas.width / 2 / scale; i <= canvas.width / 2 / scale; i++) {
-                if (i !== 0) {
+                if (Math.abs(i) > 0.1 && (i % 1 === 0 || i % 2 === 0)) { // Csak egész vagy páros számokat írunk ki, hogy ne legyen túl sok felirat
                     ctx.fillText(i, originX + i * scale, originY + 5);
                 }
             }
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'right';
             for (let i = -canvas.height / 2 / scale; i <= canvas.height / 2 / scale; i++) {
-                if (i !== 0) {
+                if (Math.abs(i) > 0.1 && (i % 1 === 0 || i % 2 === 0)) {
                     ctx.fillText(-i, originX - 5, originY + i * scale);
                 }
             }
@@ -244,20 +300,67 @@
                 ctx.fillText(label, screenX, screenY - 10);
             }
         }
+        
+        // Draws a line on the canvas
+        function drawLine(p1, p2, color, isDashed) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            if (isDashed) {
+                ctx.setLineDash([5, 5]);
+            } else {
+                ctx.setLineDash([]);
+            }
+            ctx.moveTo(originX + p1.x * scale, originY - p1.y * scale);
+            ctx.lineTo(originX + p2.x * scale, originY - p2.y * scale);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Main draw function
+        function draw() {
+            drawGrid();
+
+            if (historyToggle.checked) {
+                // Draw historical points and lines
+                for (let i = 0; i < history.length; i++) {
+                    const h = history[i];
+                    drawPoint(h.original, 'rgba(59, 130, 246, 0.4)', '', 4);
+                    drawPoint(h.transformed, 'rgba(239, 68, 68, 0.4)', '', 4);
+                    drawLine(h.original, h.transformed, 'rgba(156, 163, 175, 0.4)', true);
+                }
+            }
+            
+            // Draw current points
+            if (originalPoint) {
+                drawPoint(originalPoint, '#3b82f6', 'P', 6);
+            }
+            if (transformedPoint) {
+                drawPoint(transformedPoint, '#ef4444', 'P\'', 6);
+            }
+        }
 
         // Animation loop for the P' point fade-in effect
         function animatePPrime() {
             const elapsed = performance.now() - animationStartTime;
             const progress = Math.min(elapsed / animationDuration, 1);
             const currentRadius = 6 * progress;
-            const label = progress === 1 ? "P'" : null;
-
+            
             drawGrid();
+            if (historyToggle.checked) {
+                // Draw historical points and lines
+                for (let i = 0; i < history.length; i++) {
+                    const h = history[i];
+                    drawPoint(h.original, 'rgba(59, 130, 246, 0.4)', '', 4);
+                    drawPoint(h.transformed, 'rgba(239, 68, 68, 0.4)', '', 4);
+                    drawLine(h.original, h.transformed, 'rgba(156, 163, 175, 0.4)', true);
+                }
+            }
             if (originalPoint) {
                 drawPoint(originalPoint, '#3b82f6', 'P', 6);
             }
             
             if (progress > 0) {
+                const label = progress === 1 ? "P'" : null;
                 drawPoint(transformedPoint, '#ef4444', label, currentRadius);
             }
             
@@ -268,15 +371,23 @@
 
         // Handles click events on the canvas
         canvas.addEventListener('click', (event) => {
+            console.log('Kattintás a vászonra.');
             const rect = canvas.getBoundingClientRect();
             const clickX = event.clientX - rect.left;
             const clickY = event.clientY - rect.top;
 
             // Convert screen coordinates to mathematical coordinates
-            originalPoint = {
+            const newOriginalPoint = {
                 x: (clickX - originX) / scale,
                 y: -(clickY - originY) / scale
             };
+            
+            // Add previous points to history before updating
+            if (originalPoint && transformedPoint) {
+                history.push({ original: originalPoint, transformed: transformedPoint });
+            }
+
+            originalPoint = newOriginalPoint;
             
             // Apply the current transformation based on the task index
             const currentTransformation = transformations[currentTaskIndex];
@@ -291,20 +402,27 @@
             animatePPrime();
         });
 
+        // Event listener for the history toggle switch
+        historyToggle.addEventListener('change', () => {
+            draw();
+        });
+
         // Event listener for the 'Previous' button
         prevBtn.addEventListener('click', () => {
+            console.log('Előző gomb megnyomva.');
             let newIndex = currentTaskIndex - 1;
             if (newIndex < 0) {
-                newIndex = transformations.length - 1;
+                newIndex = 0;
             }
             selectTask(newIndex);
         });
 
         // Event listener for the 'Next' button
         nextBtn.addEventListener('click', () => {
+            console.log('Következő gomb megnyomva.');
             let newIndex = currentTaskIndex + 1;
             if (newIndex >= transformations.length) {
-                newIndex = 0;
+                newIndex = transformations.length - 1;
             }
             selectTask(newIndex);
         });
@@ -313,14 +431,27 @@
         taskButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const index = parseInt(button.dataset.taskIndex);
+                console.log(`Kattintás a(z) ${index + 1}. feladat gombjára.`);
                 selectTask(index);
             });
         });
 
-        // Initial setup
-        resetCanvas();
-        updateTaskButtons();
+        // A window resize eseményfigyelő hozzáadása
+        window.addEventListener('resize', resizeCanvas);
 
+        // Kezdő beállítások
+        function selectTask(index) {
+            console.log(`Feladat váltása a(z) ${index + 1}. feladatra.`);
+            currentTaskIndex = index;
+            history = []; // Előzmények törlése feladatváltáskor
+            historyToggle.checked = false;
+            resetCanvas();
+            updateTaskButtons();
+        }
+
+        // Hívjuk meg az induláskor is
+        updateTaskButtons();
+        resizeCanvas();
     </script>
 </body>
 </html>
