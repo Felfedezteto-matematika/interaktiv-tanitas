@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Négyszögek átalakítása</title>
+    <!-- Tailwind CSS betöltése -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        
+        /* CSS változók az egységes színsémához */
+        :root {
+            --fg: #1f2937;
+            --border: #e5e7eb;
+            --light-grid: #e5e7eb;
+            --axis: #9ca3af;
+            --blue: #3b82f6;
+            --red: #ef4444;
+            --green: #22c55e;
+            --transition: 0.2s ease;
+        }
+
+        /* Alapvető body és betűtípus */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem 1rem;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        /* A rács konténer stílusa, a koordináta-rendszer alapja */
+        .grid-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            /* Rács stílus */
+            background-color: #ffffff;
+            border: 2px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            margin-top: 1.5rem;
+        }
+
+        /* Rácsvonalak megjelenítése háttérrel */
+        .grid-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Rácsvonalak (8 egység / 0.5 lépésenként = 16 divízió) */
+            background-image: linear-gradient(to right, var(--light-grid) 1px, transparent 1px),
+                              linear-gradient(to bottom, var(--light-grid) 1px, transparent 1px);
+            /* A 16 divízió (0.5-ös felbontás) beállítása */
+            background-size: calc(100% / 16) calc(100% / 16);
+            z-index: 1;
+        }
+        /* Középső (Y-tengely, x=0) vonal kiemelése */
+        .grid-container::after {
+            content: '';
+            position: absolute;
+            top: 0; 
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background-color: var(--axis);
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+        /* Középső (X-tengely, y=0) vonal kiemelése */
+        .grid-container-y-axis::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            height: 2px;
+            width: 100%;
+            background-color: var(--axis);
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+        
+        /* Mozgatható pont stílusa */
+        .dot {
+            position: absolute;
+            background-color: var(--blue);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: grab;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            transition: background-color 0.1s ease;
+        }
+        .dot:active {
+            cursor: grabbing;
+            background-color: #1d4ed8;
+            z-index: 20;
+        }
+
+        /* Vezérlő gombok stílusa */
+        .control-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+        }
+        
+        .reset-button {
+            background-color: var(--red);
+            color: white;
+        }
+        .reset-button:hover {
+            background-color: #dc2626;
+        }
+        .check-button {
+            background-color: var(--green);
+            color: white;
+        }
+        .check-button:hover:not(:disabled) {
+            background-color: #16a34a;
+        }
+        .check-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        /* Visszajelző üzenet stílusa */
+        .message-box {
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .success {
+            background-color: #d1fae5; 
+            color: #059669; 
+        }
+        .error {
+            background-color: #fee2e2; 
+            color: var(--red); 
+        }
+        .info {
+            background-color: #eff6ff; 
+            color: #2563eb; 
+        }
+        /* Célok listájának stílusa */
+        .goal-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 0 1rem 0;
+            text-align: left;
+        }
+        .goal-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .goal-icon {
+            margin-right: 0.5rem;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: white;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .current-goal .goal-icon {
+            background-color: #f59e0b; /* Sárga (Aktuális) */
+        }
+        .completed-goal {
+            text-decoration: line-through;
+            color: #6b7280;
+        }
+        .completed-goal .goal-icon {
+            background-color: var(--green); /* Zöld (Kész) */
+        }
+        .future-goal {
+            color: var(--fg);
+        }
+        .future-goal .goal-icon {
+            background-color: var(--axis); /* Szürke (Jövőbeli) */
+        }
+        @media (min-width: 640px) { /* Kis képernyő felett */
+            .control-button {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-4 sm:p-8 rounded-lg shadow-md max-w-2xl w-full text-center">
+        
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Négyszögek átalakítása</h1>
+        <p class="text-gray-600 mb-6 pb-4">Mozgass pontosan egy pontot, hogy a megadott alakzatot kapd!</p>
+        
+        <div class="message-box info" id="message-box">
+            <!-- A dinamikus üzenet itt jelenik meg -->
+        </div>
+
+        <h2 class="text-lg font-semibold text-gray-700 mb-3 text-left">Feladatok:</h2>
+        <ul class="goal-list" id="goal-list">
+            <!-- Feladatok listája dinamikusan frissül -->
+            <li id="task-1" class="goal-item current-goal">
+                <span class="goal-icon">1</span>
+                <span>Szimmetrikus trapéz (ami nem négyzet)</span>
+            </li>
+            <li id="task-2" class="goal-item future-goal">
+                <span class="goal-icon">2</span>
+                <span>Deltoid</span>
+            </li>
+            <li id="task-3" class="goal-item future-goal">
+                <span class="goal-icon">3</span>
+                <span>Négyzet</span>
+            </li>
+        </ul>
+
+        <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mt-6">
+            <button class="control-button reset-button" onclick="resetDots()">Alaphelyzetbe állítás</button>
+            <button class="control-button check-button" id="check-button" onclick="checkSolution()">Ellenőrzés</button>
+        </div>
+
+        <!-- A rács konténer, a pontok ide kerülnek -->
+        <div class="grid-container grid-container-y-axis" id="grid-container">
+            <!-- A pontok ide kerülnek JavaScripttel -->
+        </div>
+
+    </div>
+
+    <script>
+        // --- Globális változók és állandók ---
+        // A rács a [-4, 4] tartományt fedi le.
+        const MAX_COORD = 4; 
+        const MIN_COORD = -4; 
+        // 8 egység * 2 (0.5-ös lépés) = 16 teljes lépés van a rácson
+        const GRID_UNITS = 16; 
+        // A 0 koordináta indexe (0-tól 16-ig indexen)
+        const GRID_OFFSET = 8; 
+
+        // A pontok kezdeti geometriai (x,y) koordinátái az 1. feladathoz
+        const initialGeometricPoints = [
+            { id: 0, x: 0, y: 0 },
+            { id: 1, x: 0, y: 1 },
+            { id: 2, x: 1, y: 1 },
+            { id: 3, x: 2, y: 0 }
+        ];
+
+        let currentStage = 1; 
+        const totalStages = 3; 
+        let stageStartPoints = [];
+
+        const gridContainer = document.getElementById('grid-container');
+        const messageBox = document.getElementById('message-box');
+        const checkButton = document.getElementById('check-button');
+        
+        let activeDot = null; 
+        let dots = []; 
+        let currentGeometricPoints = []; 
+
+        // --- Geometriai Ellenőrző Függvények ---
+
+        const distance = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        const isEqual = (a, b) => Math.abs(a - b) < 1e-6;
+
+        const isParallel = (p1, p2, p3, p4) => {
+            const dx1 = p2.x - p1.x;
+            const dy1 = p2.y - p1.y;
+            const dx2 = p4.x - p3.x;
+            const dy2 = p4.y - p3.y;
+            return isEqual(dx1 * dy2, dy1 * dx2);
+        };
+
+        const isPerpendicular = (p1, p2, p3) => {
+            const v1_x = p1.x - p2.x;
+            const v1_y = p1.y - p2.y;
+            const v2_x = p3.x - p2.x;
+            const v2_y = p3.y - p2.y;
+            return isEqual(v1_x * v2_x + v1_y * v2_y, 0);
+        };
+
+        const isValidQuadrilateral = (points) => {
+            const numPoints = points.length;
+            
+            // Nincsenek egybeeső pontok
+            for (let i = 0; i < numPoints; i++) {
+                for (let j = i + 1; j < numPoints; j++) {
+                    if (isEqual(distance(points[i], points[j]), 0)) {
+                        return false; 
+                    }
+                }
+            }
+
+            // Nincs három egymás utáni pont egy vonalon
+            for (let i = 0; i < numPoints; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % numPoints];
+                const p3 = points[(i + 2) % numPoints];
+                const crossProduct = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
+                if (isEqual(crossProduct, 0)) {
+                    return false; 
+                }
+            }
+            return true;
+        }
+        
+        const isSquare = (points) => {
+            const [A, B, C, D] = points;
+            const dAB = distance(A, B);
+            const dBC = distance(B, C);
+            const dCD = distance(C, D);
+            const dDA = distance(D, A);
+
+            const allSidesEqual = isEqual(dAB, dBC) && isEqual(dBC, dCD) && isEqual(dCD, dDA);
+            if (!allSidesEqual) return false;
+
+            return isPerpendicular(D, A, B);
+        };
+
+        const isIsoscelesTrapezoidNotSquare = (points) => {
+            const [A, B, C, D] = points;
+            const dAB = distance(A, B);
+            const dBC = distance(B, C);
+            const dCD = distance(C, D);
+            const dDA = distance(D, A);
+            
+            if (isSquare(points)) return false;
+
+            let isTrapezoid = false;
+            
+            // AB || CD és BC = DA (szárak)
+            if (isParallel(A, B, C, D) && isEqual(dBC, dDA)) {
+                 if (!isParallel(B, C, D, A) || (isParallel(B, C, D, A) && !isPerpendicular(D, A, B))) {
+                    isTrapezoid = true;
+                 }
+            }
+            // BC || DA és AB = CD (szárak)
+            else if (isParallel(B, C, D, A) && isEqual(dAB, dCD)) {
+                if (!isParallel(A, B, C, D) || (isParallel(A, B, C, D) && !isPerpendicular(A, B, C))) {
+                   isTrapezoid = true;
+                }
+            }
+
+            return isTrapezoid;
+        };
+
+        const isKite = (points) => {
+            const [A, B, C, D] = points;
+            const dAB = distance(A, B);
+            const dBC = distance(B, C);
+            const dCD = distance(C, D);
+            const dDA = distance(D, A);
+
+            const adjacentPair1 = isEqual(dAB, dBC) && isEqual(dCD, dDA);
+            const adjacentPair2 = isEqual(dBC, dCD) && isEqual(dDA, dAB);
+
+            return adjacentPair1 || adjacentPair2;
+        };
+
+        // --- Permutáció Ellenőrző Logika ---
+
+        const indexPermutations = [
+            [0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3], 
+            [0, 2, 3, 1], [0, 3, 1, 2], [0, 3, 2, 1], 
+        ];
+
+        const checkAllPermutations = (allPoints, geometryChecker) => {
+            for (const indices of indexPermutations) {
+                const orderedPoints = indices.map(i => allPoints.find(p => p.id === i));
+
+                if (isValidQuadrilateral(orderedPoints)) {
+                    if (geometryChecker(orderedPoints)) {
+                        return true; 
+                    }
+                }
+            }
+            return false;
+        }
+
+        // --- Rács és Pont Kezelés ---
+
+        /**
+         * Geometriai (x,y) koordináta konvertálása CSS % pozícióvá a rácson.
+         * A rács 0-16 indexű, a geometriai koordináta -4-től 4-ig terjed.
+         */
+        const geometricToCss = (x, y) => {
+            const col = x * 2 + GRID_OFFSET; // X konvertálása 0-16 indexre (0.5 felbontás)
+            const row = GRID_UNITS - (y * 2 + GRID_OFFSET); // Y konvertálása 0-16 indexre (Y tengely fordított)
+            
+            return {
+                left: `${(col / GRID_UNITS) * 100}%`,
+                top: `${(row / GRID_UNITS) * 100}%`
+            };
+        };
+
+        /**
+         * CSS % pozíció konvertálása rácsindexre (x,y)
+         */
+        const cssToGeometric = (styleLeft, styleTop) => {
+            const leftPerc = parseFloat(styleLeft);
+            const topPerc = parseFloat(styleTop);
+
+            // Rácsindex (0-tól 16-ig) kerekítéssel
+            const col = Math.round((leftPerc / 100) * GRID_UNITS);
+            const row = Math.round((topPerc / 100) * GRID_UNITS);
+
+            // Visszaalakítás geometriai (x,y) koordinátára (0.5 felbontás)
+            const x = (col - GRID_OFFSET) / 2;
+            const y = (GRID_UNITS - row - GRID_OFFSET) / 2; 
+
+            return { x, y };
+        };
+
+        // Pontok inicializálása
+        const initDots = () => {
+            gridContainer.innerHTML = ''; 
+            
+            const initialPoints = currentStage === 1 ? initialGeometricPoints : stageStartPoints;
+
+            dots = initialPoints.map(p => {
+                const dot = document.createElement('div');
+                const css = geometricToCss(p.x, p.y);
+                dot.className = 'dot';
+                dot.style.left = css.left;
+                dot.style.top = css.top;
+                dot.dataset.id = p.id;
+                gridContainer.appendChild(dot);
+                return dot;
+            });
+            updateCurrentPoints();
+            
+            stageStartPoints = JSON.parse(JSON.stringify(currentGeometricPoints));
+        };
+
+        // Pontok pozíciójának frissítése a belső állapothoz
+        const updateCurrentPoints = () => {
+            currentGeometricPoints = Array.from(dots).map(dot => {
+                const geo = cssToGeometric(dot.style.left, dot.style.top);
+                return { x: geo.x, y: geo.y, id: parseInt(dot.dataset.id) };
+            }).sort((a, b) => a.id - b.id); 
+        };
+
+        // Pont alaphelyzetbe állítása
+        const resetDots = () => {
+            dots.forEach(dot => {
+                const dotId = parseInt(dot.dataset.id);
+                const initialP = stageStartPoints.find(ip => ip.id === dotId);
+                
+                if (initialP) {
+                    const css = geometricToCss(initialP.x, initialP.y);
+                    dot.style.top = css.top;
+                    dot.style.left = css.left;
+                }
+            });
+            updateCurrentPoints();
+            showMessage('info', 'A pontok visszaállítva az aktuális feladat kezdőállapotára.');
+        };
+
+        // --- Feladatkezelés ---
+
+        // Ellenőrzés
+        const checkSolution = () => {
+            updateCurrentPoints();
+            const points = currentGeometricPoints;
+            let result = false;
+            let message = '';
+
+            // 1. Ellenőrzés: Pontosan egy pont mozgott-e
+            const initialPoints = stageStartPoints;
+            const movedDotCount = points.filter(p => {
+                const initialP = initialPoints.find(ip => ip.id === p.id);
+                return !isEqual(p.x, initialP.x) || !isEqual(p.y, initialP.y);
+            }).length;
+
+            if (movedDotCount !== 1) {
+                showMessage('error', `Hiba: Az aktuális feladathoz pontosan egy pontot kell áthelyezned. Jelenleg ${movedDotCount} pont mozdult el.`);
+                return;
+            }
+            
+            // 2. Ellenőrzés: Fél-egész rácspont ellenőrzés
+            const allOnGrid = points.every(p => {
+                // Ellenőrizzük, hogy a koordináta 0.5-es lépésekkel a [-4, 4] tartományban van-e
+                return (p.x * 2) % 1 === 0 && p.x >= MIN_COORD && p.x <= MAX_COORD &&
+                       (p.y * 2) % 1 === 0 && p.y >= MIN_COORD && p.y <= MAX_COORD;
+            });
+
+            if (!allOnGrid) {
+                showMessage('error', 'Hiba: Nem minden pont van rácsvonal metszéspontján (egész vagy fél-egész koordinátán).');
+                return;
+            }
+
+            // 3. Geometriai ellenőrzés
+            switch (currentStage) {
+                case 1:
+                    result = checkAllPermutations(points, isIsoscelesTrapezoidNotSquare);
+                    message = result 
+                        ? 'Gratulálok! Sikeresen előállítottál egy szimmetrikus trapézt, ami nem négyzet.' 
+                        : 'Sajnos ez nem jó megoldás, próbáld újra! Ellenőrizd a párhuzamosságot és az oldalhosszakat.';
+                    break;
+                case 2:
+                    result = checkAllPermutations(points, isKite);
+                    message = result 
+                        ? 'Szuper! A kapott alakzat egy deltoid.' 
+                        : 'Sajnos ez a négyszög nem deltoid. Próbáld újra! Két-két szomszédos oldal hossza legyen egyenlő.';
+                    break;
+                case 3:
+                    result = checkAllPermutations(points, isSquare);
+                    message = result 
+                        ? 'Kiváló! A kapott alakzat egy négyzet.' 
+                        : 'Sajnos ez a négyszög nem négyzet. Próbáld újra! Gondolj a derékszögekre és az oldalhosszakra.';
+                    break;
+            }
+
+            if (result) {
+                showMessage('success', `${message} A következő feladatra léphetsz!`);
+                setTimeout(advanceStage, 1500);
+            } else {
+                showMessage('error', message);
+            }
+        };
+
+        // Következő feladatra lépés
+        const advanceStage = () => {
+            stageStartPoints = JSON.parse(JSON.stringify(currentGeometricPoints));
+
+            if (currentStage < totalStages) {
+                const prevStage = currentStage;
+                currentStage++;
+                
+                updateGoalList(prevStage, currentStage);
+                initDots(); 
+                
+                let nextGoalMessage = '';
+                if (currentStage === 2) {
+                    nextGoalMessage = 'Most úgy mozgass át pontosan egy pontot, hogy deltoidot kapj.';
+                } else if (currentStage === 3) {
+                    nextGoalMessage = 'Újra egyetlen pont átmozgatásával készíts négyzetet.';
+                }
+
+                showMessage('info', `Jöhet a ${currentStage}. feladat! ${nextGoalMessage}`);
+
+            } else {
+                updateGoalList(currentStage);
+                showMessage('success', 'Minden feladatot sikeresen megoldottál! Gratulálunk!');
+                checkButton.disabled = true; 
+            }
+        };
+
+        // Cél lista frissítése (Vizuális visszajelzés)
+        const updateGoalList = (oldStage, newStage) => {
+            if (oldStage) {
+                const oldTask = document.getElementById(`task-${oldStage}`);
+                if (oldTask) {
+                    oldTask.classList.remove('current-goal');
+                    oldTask.classList.add('completed-goal');
+                    oldTask.querySelector('.goal-icon').innerHTML = '&#10003;'; // Pipa (checkmark)
+                }
+            }
+            if (newStage) {
+                const newTask = document.getElementById(`task-${newStage}`);
+                if (newTask) {
+                    newTask.classList.remove('future-goal');
+                    newTask.classList.add('current-goal');
+                    newTask.querySelector('.goal-icon').innerHTML = newStage;
+                }
+            }
+        }
+
+        // Üzenet megjelenítése
+        const showMessage = (type, text) => {
+            messageBox.className = `message-box ${type}`;
+            messageBox.innerHTML = `<p>${text}</p>`;
+        };
+
+        // --- Eseménykezelők (Rácsra illesztés logika) ---
+        
+        // Funkció a kurzor/érintés pozíciójának rácspontra illesztésére (0.5-ös felbontással)
+        const snapToGrid = (clientX, clientY) => {
+            const rect = gridContainer.getBoundingClientRect();
+            // Egy rácsegység pixelben (most 1/16-ad)
+            const cellWidth = rect.width / GRID_UNITS;
+            const cellHeight = rect.height / GRID_UNITS;
+            
+            let x = clientX - rect.left;
+            let y = clientY - rect.top;
+            
+            x = Math.max(0, Math.min(x, rect.width));
+            y = Math.max(0, Math.min(y, rect.height));
+
+            // Rács metszéspontra ugrás (a legközelebbi 1/16-ad divízióra)
+            const snappedX = Math.round(x / cellWidth) * cellWidth;
+            const snappedY = Math.round(y / cellHeight) * cellHeight;
+
+            activeDot.style.left = `${(snappedX / rect.width) * 100}%`;
+            activeDot.style.top = `${(snappedY / rect.height) * 100}%`;
+            updateCurrentPoints();
+        }
+
+        // Egér eseménykezelők
+        gridContainer.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('dot')) {
+                activeDot = e.target;
+                activeDot.style.cursor = 'grabbing';
+                e.preventDefault(); 
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (activeDot) {
+                snapToGrid(e.clientX, e.clientY);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (activeDot) {
+                activeDot.style.cursor = 'grab';
+                activeDot = null;
+            }
+        });
+
+        // Érintéses eseménykezelők
+        gridContainer.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('dot') && e.touches.length === 1) {
+                activeDot = e.target;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (activeDot) {
+                const touch = e.touches[0];
+                snapToGrid(touch.clientX, touch.clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            activeDot = null;
+        });
+
+
+        // Indítás
+        window.onload = () => {
+            initDots();
+            showMessage('info', `A lent látható négy pontból mozgass át pontosan egy pontot úgy, hogy a kapott alakzat szimmetrikus trapéz legyen, ami nem négyzet.`);
+        };
+    </script>
+</body>
+</html>
