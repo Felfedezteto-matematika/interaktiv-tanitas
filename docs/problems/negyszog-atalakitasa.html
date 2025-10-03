@@ -505,7 +505,7 @@
             checkButton.disabled = false;
             resetButton.disabled = false;
 
-            showMessage('info', `Az alkalmazás újraindítva. Kezdődhet a ${currentStage}. feladat: Mozgass át pontosan egy pontot úgy, hogy a kapott alakzat szimmetrikus trapéz legyen, ami nem négyzet.`);
+            showMessage('info', `Az alkalmazás újraindítva. Kezdődhet a ${currentStage}. feladat: Mozgass át pontosan egy pontot úgy, hogy a kapott alakzat szimmetrikus trapéz legyen, ami nem téglalap.`);
         };
 
 
@@ -547,7 +547,7 @@
                 case 1:
                     result = checkAllPermutations(points, isIsoscelesTrapezoidNotSquare);
                     message = result 
-                        ? 'Gratulálok! Sikeresen előállítottál egy szimmetrikus trapézt, ami nem négyzet.' 
+                        ? 'Gratulálok! Sikeresen előállítottál egy szimmetrikus trapézt, ami nem téglalap.' 
                         : 'Sajnos ez nem jó megoldás, próbáld újra!';
                     break;
                 case 2:
@@ -697,7 +697,7 @@
         // Indítás
         window.onload = () => {
             initDots();
-            showMessage('info', `A lent látható négy pontból mozgass át pontosan egy pontot úgy, hogy a kapott alakzat szimmetrikus trapéz legyen, ami nem négyzet.`);
+            showMessage('info', `A lent látható négy pontból mozgass át pontosan egy pontot úgy, hogy a kapott alakzat szimmetrikus trapéz legyen, ami nem téglalap.`);
         };
     </script>
 </body>
