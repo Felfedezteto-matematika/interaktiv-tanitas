@@ -66,30 +66,6 @@
             background-size: calc(100% / 16) calc(100% / 16);
             z-index: 1;
         }
-        /* Középső (Y-tengely, x=0) vonal kiemelése */
-        .grid-container::after {
-            content: '';
-            position: absolute;
-            top: 0; 
-            left: 50%;
-            width: 2px;
-            height: 100%;
-            background-color: var(--axis);
-            transform: translateX(-50%);
-            z-index: 2;
-        }
-        /* Középső (X-tengely, y=0) vonal kiemelése */
-        .grid-container-y-axis::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            height: 2px;
-            width: 100%;
-            background-color: var(--axis);
-            transform: translateY(-50%);
-            z-index: 2;
-        }
         
         /* Mozgatható pont stílusa */
         .dot {
@@ -127,12 +103,21 @@
         }
         
         .reset-button {
-            background-color: var(--red);
+            background-color: #726ce2; /* Indigo árnyalat a 'blue' helyett, a megkülönböztetéshez */
             color: white;
         }
         .reset-button:hover {
+            background-color: #4338ca;
+        }
+        /* Újrakezdés gomb stílusa */
+        .restart-button {
+            background-color: #dd5d5d;
+            color: white;
+        }
+        .restart-button:hover {
             background-color: #dc2626;
         }
+        
         .check-button {
             background-color: var(--green);
             color: white;
@@ -140,11 +125,14 @@
         .check-button:hover:not(:disabled) {
             background-color: #16a34a;
         }
-        .check-button:disabled {
+        
+        /* Általános letiltott gomb stílus */
+        .control-button:disabled {
             background-color: #9ca3af;
             cursor: not-allowed;
-            opacity: 0.8;
+            opacity: 0.6;
         }
+
 
         /* Visszajelző üzenet stílusa */
         .message-box {
@@ -220,16 +208,11 @@
         <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Négyszögek átalakítása</h1>
         <p class="text-gray-600 mb-6 pb-4">Mozgass pontosan egy pontot, hogy a megadott alakzatot kapd!</p>
         
-        <div class="message-box info" id="message-box">
-            <!-- A dinamikus üzenet itt jelenik meg -->
-        </div>
-
-        <h2 class="text-lg font-semibold text-gray-700 mb-3 text-left">Feladatok:</h2>
         <ul class="goal-list" id="goal-list">
             <!-- Feladatok listája dinamikusan frissül -->
             <li id="task-1" class="goal-item current-goal">
                 <span class="goal-icon">1</span>
-                <span>Szimmetrikus trapéz (ami nem négyzet)</span>
+                <span>Szimmetrikus trapéz, ami nem négyzet</span>
             </li>
             <li id="task-2" class="goal-item future-goal">
                 <span class="goal-icon">2</span>
@@ -241,13 +224,18 @@
             </li>
         </ul>
 
+        <div class="message-box info" id="message-box">
+            <!-- A dinamikus üzenet itt jelenik meg -->
+        </div>
+
         <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4 mt-6">
-            <button class="control-button reset-button" onclick="resetDots()">Alaphelyzetbe állítás</button>
+            <button class="control-button restart-button" id="restart-button" onclick="restartAll()">Újrakezdés</button>
+            <button class="control-button reset-button" id="reset-button" onclick="resetDots()">Alaphelyzetbe állítás</button>
             <button class="control-button check-button" id="check-button" onclick="checkSolution()">Ellenőrzés</button>
         </div>
 
         <!-- A rács konténer, a pontok ide kerülnek -->
-        <div class="grid-container grid-container-y-axis" id="grid-container">
+        <div class="grid-container" id="grid-container">
             <!-- A pontok ide kerülnek JavaScripttel -->
         </div>
 
@@ -278,6 +266,8 @@
         const gridContainer = document.getElementById('grid-container');
         const messageBox = document.getElementById('message-box');
         const checkButton = document.getElementById('check-button');
+        const resetButton = document.getElementById('reset-button'); // Új: Alaphelyzetbe állítás gomb
+        const restartButton = document.getElementById('restart-button'); // Új: Újrakezdés gomb
         
         let activeDot = null; 
         let dots = []; 
@@ -341,6 +331,15 @@
 
             return isPerpendicular(D, A, B);
         };
+        
+        const getSquareSideLength = (points) => {
+            if (isSquare(points)) {
+                // Négyzet esetén minden oldal egyenlő, elegendő az egyiket mérni.
+                const [A, B] = points;
+                return distance(A, B); 
+            }
+            return 0;
+        };
 
         const isIsoscelesTrapezoidNotSquare = (points) => {
             const [A, B, C, D] = points;
@@ -349,20 +348,18 @@
             const dCD = distance(C, D);
             const dDA = distance(D, A);
             
-            if (isSquare(points)) return false;
-
             let isTrapezoid = false;
             
             // AB || CD és BC = DA (szárak)
             if (isParallel(A, B, C, D) && isEqual(dBC, dDA)) {
-                 if (!isParallel(B, C, D, A) || (isParallel(B, C, D, A) && !isPerpendicular(D, A, B))) {
-                    isTrapezoid = true;
-                 }
+                if (!isParallel(B, C, D, A)) {
+                   if (!isPerpendicular(D, A, B) && !isPerpendicular(C, A, B)) isTrapezoid = true;
+                }
             }
             // BC || DA és AB = CD (szárak)
             else if (isParallel(B, C, D, A) && isEqual(dAB, dCD)) {
-                if (!isParallel(A, B, C, D) || (isParallel(A, B, C, D) && !isPerpendicular(A, B, C))) {
-                   isTrapezoid = true;
+                if (!isParallel(A, B, C, D)) {
+                   if (!isPerpendicular(A, B, C) && !isPerpendicular(D, B, C)) isTrapezoid = true;
                 }
             }
 
@@ -404,10 +401,6 @@
 
         // --- Rács és Pont Kezelés ---
 
-        /**
-         * Geometriai (x,y) koordináta konvertálása CSS % pozícióvá a rácson.
-         * A rács 0-16 indexű, a geometriai koordináta -4-től 4-ig terjed.
-         */
         const geometricToCss = (x, y) => {
             const col = x * 2 + GRID_OFFSET; // X konvertálása 0-16 indexre (0.5 felbontás)
             const row = GRID_UNITS - (y * 2 + GRID_OFFSET); // Y konvertálása 0-16 indexre (Y tengely fordított)
@@ -440,6 +433,7 @@
         const initDots = () => {
             gridContainer.innerHTML = ''; 
             
+            // Az 1. feladathoz az initialGeometricPoints, különben az aktuális kezdőpontok
             const initialPoints = currentStage === 1 ? initialGeometricPoints : stageStartPoints;
 
             dots = initialPoints.map(p => {
@@ -454,6 +448,7 @@
             });
             updateCurrentPoints();
             
+            // Beállítjuk a stageStartPoints-ot a későbbi alaphelyzetbe állításhoz
             stageStartPoints = JSON.parse(JSON.stringify(currentGeometricPoints));
         };
 
@@ -465,7 +460,7 @@
             }).sort((a, b) => a.id - b.id); 
         };
 
-        // Pont alaphelyzetbe állítása
+        // Pont alaphelyzetbe állítása (aktuális feladat kezdőállapotára)
         const resetDots = () => {
             dots.forEach(dot => {
                 const dotId = parseInt(dot.dataset.id);
@@ -480,6 +475,39 @@
             updateCurrentPoints();
             showMessage('info', 'A pontok visszaállítva az aktuális feladat kezdőállapotára.');
         };
+
+        // Teljes újrakezdés (vissza az 1. feladatra)
+        const restartAll = () => {
+            currentStage = 1;
+            // A stageStartPoints-ot visszaállítjuk az eredeti kiinduló pontokra
+            stageStartPoints = JSON.parse(JSON.stringify(initialGeometricPoints));
+
+            // Visszaállítjuk a célok listájának kinézetét az 1. feladatra
+            for (let i = 1; i <= totalStages; i++) {
+                const task = document.getElementById(`task-${i}`);
+                if (task) {
+                    task.classList.remove('completed-goal', 'current-goal');
+                    task.classList.add('future-goal');
+                    task.querySelector('.goal-icon').innerHTML = i.toString();
+                }
+            }
+            // Az első feladatot beállítjuk aktuálisnak
+            const firstTask = document.getElementById(`task-1`);
+            if (firstTask) {
+                firstTask.classList.remove('future-goal');
+                firstTask.classList.add('current-goal');
+            }
+
+            // Újra inicializáljuk a pontokat az 1. feladat kiindulópontjaival
+            initDots();
+            
+            // Engedélyezzük az ellenőrzés és alaphelyzetbe állítás gombokat
+            checkButton.disabled = false;
+            resetButton.disabled = false;
+
+            showMessage('info', `Az alkalmazás újraindítva. Kezdődhet a ${currentStage}. feladat: Mozgass át pontosan egy pontot úgy, hogy a kapott alakzat szimmetrikus trapéz legyen, ami nem négyzet.`);
+        };
+
 
         // --- Feladatkezelés ---
 
@@ -520,19 +548,19 @@
                     result = checkAllPermutations(points, isIsoscelesTrapezoidNotSquare);
                     message = result 
                         ? 'Gratulálok! Sikeresen előállítottál egy szimmetrikus trapézt, ami nem négyzet.' 
-                        : 'Sajnos ez nem jó megoldás, próbáld újra! Ellenőrizd a párhuzamosságot és az oldalhosszakat.';
+                        : 'Sajnos ez nem jó megoldás, próbáld újra!';
                     break;
                 case 2:
                     result = checkAllPermutations(points, isKite);
                     message = result 
                         ? 'Szuper! A kapott alakzat egy deltoid.' 
-                        : 'Sajnos ez a négyszög nem deltoid. Próbáld újra! Két-két szomszédos oldal hossza legyen egyenlő.';
+                        : 'Sajnos ez a négyszög nem deltoid.';
                     break;
                 case 3:
                     result = checkAllPermutations(points, isSquare);
                     message = result 
                         ? 'Kiváló! A kapott alakzat egy négyzet.' 
-                        : 'Sajnos ez a négyszög nem négyzet. Próbáld újra! Gondolj a derékszögekre és az oldalhosszakra.';
+                        : 'Sajnos ez a négyszög nem négyzet. Próbáld újra!';
                     break;
             }
 
@@ -565,9 +593,11 @@
                 showMessage('info', `Jöhet a ${currentStage}. feladat! ${nextGoalMessage}`);
 
             } else {
+                // Ha minden feladat kész
                 updateGoalList(currentStage);
                 showMessage('success', 'Minden feladatot sikeresen megoldottál! Gratulálunk!');
                 checkButton.disabled = true; 
+                resetButton.disabled = true; // KÉRT VÁLTOZTATÁS: letiltjuk az alaphelyzetbe állítás gombot
             }
         };
 
