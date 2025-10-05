@@ -69,11 +69,8 @@
 
     <div id="game-container" class="w-full max-w-4xl bg-white p-6 sm:p-8 rounded-xl shadow-2xl transition-all relative">
         <h1 class="text-3xl font-extrabold text-gray-800 mb-2 text-center">Színkitalálás I.</h1>
-        <p class="text-center text-gray-600 mb-2">
-            **A mintázatot egy $\mathbf{2 \times 6}$-os transzlációs alapegység (12 típus) határozza meg, 4:4:4 színegyensúllyal.**
-        </p>
         <p class="text-center text-gray-600 mb-6 text-sm">
-            **12 feltárt cella szolgál kiindulópontként, minden szimmetria típusból egy.** A $\mathbf{2 \times 3}$-as pöttyök vizuálisan segítik a mintázat struktúrájának megértését. Használd az ismétlődés és a centrális szimmetria elvét a többi négyzet színének $\mathbf{pontos}$ megállapításához!
+            A lenti ábrán a fekete pöttyök szimmetria középpontok. Néhány mező színét megadtuk, ezek alapján kell kitalálnod 5 véletlenszerű mező színét. Cél, hogy minél többször helyesen tippelj, minél kevesebb idő alatt.
         </p>
 
         <div class="flex justify-center items-center mb-6">
@@ -99,9 +96,9 @@
         <!-- Játék vége/üzenet modal -->
         <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div class="bg-white p-8 rounded-lg shadow-2xl text-center max-w-sm w-full">
-                <h2 id="modal-title" class="text-3xl font-bold mb-4 text-gray-800">Játék Vége!</h2>
+                <h2 id="modal-title" class="text-3xl font-bold mb-4 text-gray-800">Véget ért a játék</h2>
                 <p id="modal-message" class="text-lg text-gray-600 mb-6">Elért pontszám: 0</p>
-                <button id="restart-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Újraindítás</button>
+                <button id="restart-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Új játék</button>
             </div>
         </div>
     </div>
@@ -126,15 +123,10 @@
             [0, 1, 2, 3,  4,  5], // R, G, B, R, G, B (Össz: 2R, 2G, 2B)
             [6, 7, 8, 9, 10, 11]  // B, G, R, B, G, R (Össz: 2R, 2G, 2B)
         ];
-/*        const COLOR_ARRAY = [
-            COLORS[0],COLORS[1],COLORS[1],COLORS[0],COLORS[2],COLORS[2],
-            COLORS[2],COLORS[0],COLORS[2],COLORS[1],COLORS[0],COLORS[1]];*/
-
         const COLOR_INDEX = [
             0, 1, 1, 0, 2, 2,
             2, 0, 2, 1, 0, 1
         ];
-        // ===================================
         
         // Globális változók és konstansok
         const GRID_SIZE = 12; // 12x12 rács (mindkét dimenzióban)
@@ -453,8 +445,6 @@
             initializeGridData();
             renderGrid();
             
-            // 2. *** 12 feltárt cella keresése (minden típusból 1) ***
-            // A "típus" a 2x6-os transzlációs alapegységen belüli relatív pozícióval definiált szimmetriai pálya.
             const REQUIRED_REVEALED_COUNT = 12;
             const TOTAL_TYPES = UNIT_ROWS * TR_UNIT_COLS; // 12 egyedi típus
             
