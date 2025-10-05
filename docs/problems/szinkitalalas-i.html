@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Színkitalálás I.</title>
+    <!-- Tailwind CSS betöltése -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* A rács celláinak alapstílusa */
@@ -62,20 +63,6 @@
             transform: scale(1.05);
             opacity: 0.9;
         }
-        
-        /* Mozgatható modal stílusok */
-        .draggable-modal-content {
-            cursor: grab; /* Egér ikon a mozgatható területen */
-            /* A mozgatható modalnak is legyen egyedi stílusa, ami felülírja a fixed pozíciót */
-            position: relative; /* alaphelyzetben ez marad, amíg nem mozdítjuk el */
-            left: 0;
-            top: 0;
-            transform: none;
-        }
-        .draggable-modal-content.dragging {
-            cursor: grabbing;
-        }
-        
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen p-4 sm:p-8 flex justify-center items-start font-sans">
@@ -86,48 +73,32 @@
             A lenti ábrán a fekete pöttyök szimmetria középpontok. Néhány mező színét megadtuk, ezek alapján kell kitalálnod 5 véletlenszerű mező színét. Cél, hogy minél többször helyesen tippelj, minél kevesebb idő alatt.
         </p>
 
-        <div id="game-elements" class="hidden">
-            <div class="flex justify-center items-center mb-6">
-                <div id="score-display" class="text-2xl font-bold text-gray-700 p-3 bg-gray-100 rounded-lg w-full sm:w-1/2 max-w-sm text-center">Pontszám: 0</div>
-            </div>
-
-            <div id="grid-container" class="mx-auto relative" style="display: grid; grid-template-columns: repeat(12, 1fr); aspect-ratio: 1 / 1; width: 100%; max-width: 600px;">
-                </div>
+        <div class="flex justify-center items-center mb-6">
+            <div id="score-display" class="text-2xl font-bold text-gray-700 p-3 bg-gray-100 rounded-lg w-full sm:w-1/2 max-w-sm text-center">Pontszám: 0</div>
         </div>
 
+        <!-- Játék rács - 12x12 -->
+        <div id="grid-container" class="mx-auto relative" style="display: grid; grid-template-columns: repeat(12, 1fr); aspect-ratio: 1 / 1; width: 100%; max-width: 600px;">
+            <!-- Cella elemeket a JavaScript fogja generálni -->
+        </div>
 
+        <!-- Színválasztó Modal (Color Picker) - Abszolút pozícionálással a rácson belül -->
         <div id="color-picker-modal" class="absolute hidden bg-white p-2 rounded-lg shadow-xl border border-gray-200 z-30 transition-opacity duration-100">
             <div id="color-options" class="flex space-x-1">
                 <button class="color-option-button" style="background-color: #ef4444;" data-color="C0" aria-label="Piros"></button>
                 <button class="color-option-button" style="background-color: #10b981;" data-color="C1" aria-label="Zöld"></button>
                 <button class="color-option-button" style="background-color: #3b82f6;" data-color="C2" aria-label="Kék"></button>
             </div>
+            <!-- Kis nyíl a modal alján, ami a rácsra mutat -->
             <div class="absolute w-3 h-3 bg-white transform rotate-45 border-t border-l border-gray-200" style="bottom: -6px; left: 50%; margin-left: -6px; pointer-events: none;"></div>
         </div>
 
-        <div id="start-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-            <div class="bg-white p-10 rounded-xl shadow-2xl text-center max-w-lg w-full">
-                <h2 class="text-4xl font-extrabold mb-4 text-gray-900">Színkitalálós Kaland</h2>
-                <p class="text-lg text-gray-700 mb-8">Készülj fel, hogy kitaláld a rejtett színeket a szimmetria szabályai alapján!</p>
-                <button id="start-game-button" class="bg-green-600 hover:bg-green-700 text-white font-extrabold text-xl py-3 px-8 rounded-lg shadow-lg transition-colors transform hover:scale-105">
-                    START JÁTÉK!
-                </button>
-            </div>
-        </div>
-
+        <!-- Játék vége/üzenet modal -->
         <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div id="modal-content" class="draggable-modal-content bg-white p-0 rounded-lg shadow-2xl text-center max-w-sm w-full transition-transform">
-                
-                <div id="modal-header" class="p-4 bg-gray-100 border-b border-gray-200 flex justify-between items-center rounded-t-lg">
-                    <h2 class="text-xl font-bold text-gray-800 m-0">Eredmények</h2>
-                    <button id="close-modal-button" class="text-gray-500 hover:text-gray-900 text-2xl font-semibold leading-none">&times;</button>
-                </div>
-
-                <div class="p-8">
-                    <h2 id="modal-title" class="text-3xl font-bold mb-4 text-gray-800">Véget ért a játék</h2>
-                    <p id="modal-message" class="text-lg text-gray-600 mb-6">Elért pontszám: 0</p>
-                    <button id="restart-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Új játék</button>
-                </div>
+            <div class="bg-white p-8 rounded-lg shadow-2xl text-center max-w-sm w-full">
+                <h2 id="modal-title" class="text-3xl font-bold mb-4 text-gray-800">Véget ért a játék</h2>
+                <p id="modal-message" class="text-lg text-gray-600 mb-6">Elért pontszám: 0</p>
+                <button id="restart-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Új játék</button>
             </div>
         </div>
     </div>
@@ -138,7 +109,7 @@
         // 1. A JÁTÉK ALAPMINTÁJA (2x6 egység = 12 típus)
         // Ezt a 2x6-os tömböt ismétli a teljes 12x12-es rács.
         // A mintázat 4 Piros (0), 4 Zöld (1) és 4 Kék (2) színt tartalmaz, ami garantálja a színegyensúlyt.
-/* const EDITABLE_BASE_UNIT = [
+/*        const EDITABLE_BASE_UNIT = [
             [0, 1, 1, 0, 2, 1], // R, G, B, R, G, B (Össz: 2R, 2G, 2B)
             [2, 0, 2, 1, 0, 1]  // B, G, R, B, G, R (Össz: 2R, 2G, 2B)
         ];*/
@@ -173,27 +144,17 @@
         let startTime; // Kezdő időpont
         let isGameRunning = false;
         let BASE_UNIT = []; // A 2x6-os alapegység
-        
-        // Mozgatható modal állapotváltozók
-        let isDragging = false;
-        let dragOffsetX, dragOffsetY;
 
         // DOM elemek
         const gameContainer = document.getElementById('game-container');
-        const gameElements = document.getElementById('game-elements'); // ÚJ: A rácsot és a pontszámot tartalmazó konténer
         const gridContainer = document.getElementById('grid-container');
         const scoreDisplay = document.getElementById('score-display');
         const colorPickerModal = document.getElementById('color-picker-modal');
         const colorOptionButtons = colorPickerModal.querySelectorAll('.color-option-button');
         const messageModal = document.getElementById('message-modal');
-        const modalContent = document.getElementById('modal-content'); // ÚJ: Mozgatható tartalom
-        const modalHeader = document.getElementById('modal-header');   // ÚJ: Fejléc a mozgathatósághoz
-        const closeModalButton = document.getElementById('close-modal-button'); // ÚJ: Kikapcsoló gomb
         const modalTitle = document.getElementById('modal-title');
         const modalMessage = document.getElementById('modal-message');
         const restartButton = document.getElementById('restart-button');
-        const startModal = document.getElementById('start-modal'); // ÚJ
-        const startGameButton = document.getElementById('start-game-button'); // ÚJ
         
         /**
          * Létrehozza a teljes 12x12-es rácsmintát az EDITABLE_BASE_UNIT ismétlésével.
@@ -254,49 +215,40 @@
                     const cell = document.getElementById(`cell-${r}-${c}`);
                     const cellKey = `${r},${c}`;
                     
-                    // Kezdetben, ha a játék nem fut (start modal) és a rács már létezik, NE jelenjenek meg a színek.
-                    if (startModal.classList.contains('hidden')) { // Csak akkor frissítjük, ha elindult a játék
+                    cell.classList.remove('target-cell');
+                    cell.style.opacity = '1'; // Alapértelmezett átlátszóság
+
+                    const colorIndex = COLOR_INDEX[gridData[r][c]];
+                    const actualColor = COLORS[colorIndex];
+                    
+                    // Felfedjük a cellát, ha ismert, vagy ha vége a játéknak
+                    let shouldColor = knownCells.has(cellKey) || gameEnded;
+
+                    if (shouldColor) {
+                        cell.style.backgroundColor = actualColor;
+                        cell.classList.remove('unknown-cell');
                         
-                        cell.classList.remove('target-cell');
-                        cell.style.opacity = '1'; // Alapértelmezett átlátszóság
-
-                        const colorIndex = COLOR_INDEX[gridData[r][c]];
-                        const actualColor = COLORS[colorIndex];
+                        // FORDÍTOTT HALVÁNYÍTÁS:
                         
-                        // Felfedjük a cellát, ha ismert, vagy ha vége a játéknak
-                        let shouldColor = knownCells.has(cellKey) || gameEnded;
-
-                        if (shouldColor) {
-                            cell.style.backgroundColor = actualColor;
-                            cell.classList.remove('unknown-cell');
-                            
-                            // FORDÍTOTT HALVÁNYÍTÁS:
-                            
-                            // Alapértelmezés: A felhasználó által tippelt (vagy játék végén felfedett) cella legyen halványabb (0.7).
-                            cell.style.opacity = '0.7'; 
-                            
-                            // Kiemelés: Az eredetileg felfedett 12 cella (a kiindulási adatok) legyen teljes fénnyel (1).
-                            if (initialRevealedCells.has(cellKey)) {
-                                cell.style.opacity = '1'; 
-                            }
-                            
-                        } else {
-                            // Játék közben, nem ismert cellák
-                            cell.style.backgroundColor = '';
-                            cell.classList.add('unknown-cell');
-                        }
-
-                        // Kiemeljük a célcellát (csak futó játékban)
-                        if (isGameRunning && targetCell && targetCell.r === r && targetCell.c === c) {
-                            cell.classList.add('target-cell');
-                            // A célcellán soha ne legyen halványítás, amíg célnak van kijelölve
+                        // Alapértelmezés: A felhasználó által tippelt (vagy játék végén felfedett) cella legyen halványabb (0.7).
+                        cell.style.opacity = '0.7'; 
+                        
+                        // Kiemelés: Az eredetileg felfedett 12 cella (a kiindulási adatok) legyen teljes fénnyel (1).
+                        if (initialRevealedCells.has(cellKey)) {
                             cell.style.opacity = '1'; 
                         }
+                        
                     } else {
-                         // Játék indítása előtt minden cella marad 'unknown-cell' és halvány szürke
-                         cell.style.backgroundColor = '';
-                         cell.classList.add('unknown-cell');
-                         cell.classList.remove('target-cell');
+                        // Játék közben, nem ismert cellák
+                        cell.style.backgroundColor = '';
+                        cell.classList.add('unknown-cell');
+                    }
+
+                    // Kiemeljük a célcellát (csak futó játékban)
+                    if (isGameRunning && targetCell && targetCell.r === r && targetCell.c === c) {
+                        cell.classList.add('target-cell');
+                        // A célcellán soha ne legyen halványítás, amíg célnak van kijelölve
+                        cell.style.opacity = '1'; 
                     }
                 }
             }
@@ -470,14 +422,9 @@
         }
 
         /**
-         * Inicializálja a játékot (csak a Start gomb megnyomása után fut le).
+         * Inicializálja a játékot.
          */
         function startGame() {
-            // Elrejtjük a kezdő modalt
-            startModal.classList.add('hidden');
-            // Megjelenítjük a játék elemeit
-            gameElements.classList.remove('hidden');
-            
             // Játékállapot alaphelyzetbe állítása
             score = 0;
             guessesCompleted = 0;
@@ -485,11 +432,6 @@
             knownCells.clear();
             initialRevealedCells.clear(); // A kezdeti cellák listájának törlése
             targetCell = null;
-            
-            // Modal helyzetének alaphelyzetbe állítása
-            modalContent.style.transform = 'none';
-            modalContent.style.left = '0';
-            modalContent.style.top = '0';
             
             // Időmérés indítása
             startTime = new Date(); 
@@ -534,71 +476,15 @@
             // 3. Új célcella kiválasztása (az első szabad cella)
             selectNewTarget();
 
-            // 4. Eseménykezelők beállítása (ha még nem történt meg)
-            // setupEventListeners(); // Ezt csak egyszer hívjuk meg
+            // 4. Eseménykezelők beállítása
+            setupEventListeners();
         }
-
-        /**
-         * Beállítja a modal mozgathatóságát
-         */
-        function setupModalDrag() {
-            
-            // === MOZGATÁS INDÍTÁSA ===
-            modalHeader.addEventListener('mousedown', (e) => {
-                // Csak a bal egérgomb (button 0)
-                if (e.button !== 0 || !messageModal.classList.contains('fixed')) return; 
-
-                isDragging = true;
-                modalContent.classList.add('dragging');
-
-                // Váltás abszolút pozícióra a viewport-on belül
-                modalContent.style.position = 'absolute';
-                modalContent.style.transform = 'none';
-
-                // Az elmozdulás kiszámítása a kattintás és a modal bal/felső sarka között
-                const rect = modalContent.getBoundingClientRect();
-                dragOffsetX = e.clientX - rect.left;
-                dragOffsetY = e.clientY - rect.top;
-                
-                // Megakadályozzuk a szövegkijelölést mozgás közben
-                e.preventDefault(); 
-            });
-
-            // === MOZGATÁS ===
-            document.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-
-                // Az abszolút pozíció beállítása a viewport-on belül
-                modalContent.style.left = `${e.clientX - dragOffsetX}px`;
-                modalContent.style.top = `${e.clientY - dragOffsetY}px`;
-            });
-
-            // === MOZGATÁS VÉGE ===
-            document.addEventListener('mouseup', () => {
-                if (isDragging) {
-                    isDragging = false;
-                    modalContent.classList.remove('dragging');
-                }
-            });
-            
-            // === KIKAPCSOLÁS ===
-            closeModalButton.onclick = () => {
-                messageModal.classList.add('hidden');
-            };
-        }
-
 
         /**
          * Beállítja az összes szükséges eseményfigyelőt
          */
         function setupEventListeners() {
-            
-            // ÚJ: Start gomb
-            startGameButton.onclick = () => {
-                startGame();
-            };
-            
-            // Újraindítás gomb (Modalon belül)
+            // Újraindítás gomb
             restartButton.onclick = () => {
                 messageModal.classList.add('hidden');
                 startGame();
@@ -639,18 +525,10 @@
                     hideColorPicker();
                 }
             });
-            
-            // Játék vége modal mozgathatóságának beállítása
-            setupModalDrag();
-            
-            // Játék indítása előtt a rács előzetes felépítése (üresen)
-            initializeGridData();
-            renderGrid();
-            updateGridDisplay(); // Ez biztosítja, hogy a kezdeti cellák ne legyenek felfedve.
         }
 
         // Játék indítása az oldal betöltésekor
-        window.onload = setupEventListeners;
+        window.onload = startGame;
     </script>
 </body>
 </html>
