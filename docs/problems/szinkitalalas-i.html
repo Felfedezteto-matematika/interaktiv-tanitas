@@ -387,7 +387,6 @@
             setTimeout(() => {
                 feedbackEl.style.opacity = '1';
                 feedbackEl.style.top = '10%'; // Felfelé lebegés
-                feedbackEl.style.transition = `all ${duration / 1000}s ease-out`; 
             }, 10);
 
             // Eltávolítás az animáció után
@@ -412,11 +411,9 @@
             modalMessage.innerHTML = `
                 Gratulálunk!
                 <br><br>
-                Megtippelt négyzetek száma: <strong>${GUESS_GOAL}</strong>
+                Elért pontszám: <strong class="${score >= 0 ? 'text-green-600' : 'text-black-600'}">${score} pont</strong>
                 <br>
-                Elért pontszám: <strong class="${score >= 0 ? 'text-green-600' : 'text-red-600'}">${score} pont</strong>
-                <br>
-                Eltöltött idő: <strong class="text-indigo-600">${timeTaken} másodperc
+                Eltelt idő: <strong class="text-indigo-600">${timeTaken} másodperc
             `;
             messageModal.classList.remove('hidden');
             
@@ -459,7 +456,6 @@
                     typeCells[typeIndex].push({ r, c });
                 }
             }
-            console.log(typeCells);
             // 2b. Minden típusból véletlenszerűen kiválasztunk egy cellát (12 összesen)
             // Így garantáljuk, hogy minden szimmetriai pályából (típusból) rendelkezésre áll egy információs pont.
             for (let i = 0; i < typeCells.length; i++) {
