@@ -135,6 +135,17 @@
         .task-toggle button.active:hover {
             background: var(--green-dark);
         }
+        
+        .task-toggle button.solved {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+        
+        .task-toggle button.solved:hover {
+            background: var(--green-dark);
+            border-color: var(--green-dark);
+        }
 
         .canvas-wrap {
             position: relative;
@@ -166,6 +177,10 @@
             font-weight: 500;
             margin-bottom: 20px;
         }
+        
+        .end-message {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -174,18 +189,24 @@
         <div class="subtitle">Húzd be a tükörtengelyt a vásznon, majd kattints az Ellenőrzés gombra.</div>
 
         <div class="card">
-            <div id="taskText" class="task-text"></div>
-            <div class="canvas-wrap">
-                <canvas id="canvas" width="940" height="400"></canvas>
+            <div id="taskContainer">
+                <div id="taskText" class="task-text"></div>
+                <div class="canvas-wrap">
+                    <canvas id="canvas" width="940" height="400"></canvas>
+                </div>
+                <div class="controls">
+                    <button id="checkBtn" class="primary">Ellenőrzés</button>
+                    <button id="impossibleBtn">Lehetetlen</button>
+                    <button id="prevBtn">&larr; Előző</button>
+                    <button id="nextBtn">Következő &rarr;</button>
+                    <div class="task-toggle" id="taskToggle"></div>
+                </div>
+                <div id="status" class="status"></div>
             </div>
-            <div class="controls">
-                <button id="checkBtn" class="primary">Ellenőrzés</button>
-                <button id="impossibleBtn">Lehetetlen</button>
-                <button id="prevBtn">&larr; Előző</button>
-                <button id="nextBtn">Következő &rarr;</button>
-                <div class="task-toggle" id="taskToggle"></div>
+            <div id="endMessage" style="display: none;" class="end-message">
+                <h2 style="margin-top: 0;">Gratulálunk! Az összes feladatot sikeresen megoldottad!</h2>
+                <button id="resetBtn">Újra játszom!</button>
             </div>
-            <div id="status" class="status"></div>
         </div>
     </div>
 
@@ -291,10 +312,20 @@
         let randomPointP = null;
 
         function generateRandomPoint() {
-            randomPointP = {
-                x: Math.random() * (W - 200) + 100,
-                y: Math.random() * (H - 100) + 50
-            };
+            // Task 4-ben a pontnak nem szabad az egyenesek közelében lennie
+            if (currentTaskIndex === 3) { // tasks[3] a 4. feladat
+                do {
+                    randomPointP = {
+                        x: Math.random() * (W - 200) + 100,
+                        y: Math.random() * (H - 100) + 50
+                    };
+                } while (Math.abs(randomPointP.y - 120) < 30 || Math.abs(randomPointP.y - 280) < 30);
+            } else {
+                randomPointP = {
+                    x: Math.random() * (W - 200) + 100,
+                    y: Math.random() * (H - 100) + 50
+                };
+            }
         }
 
         const tasks = [
@@ -355,7 +386,7 @@
             },
             {
                 id: 4,
-                text: '4) Helyezz el egy P ponton átmenő tükörtengelyt úgy, hogy az egyik egyenes képe önmaga legyen, de a másiké nem.',
+                text: '4) Helyezz el egy P ponton átmenő tükörtengelyt úgy, hogy az egyik egyenes képe önmaga legyen, de a másiké ne.',
                 lines: [parallelL1, parallelL2],
                 points: [() => randomPointP],
                 check(axis) {
@@ -430,7 +461,7 @@
         // ----- Interakció: tengely rajzolása -----
         let axisPoints = []; // max 2 pont
         let isDragging = false;
-
+        
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -441,7 +472,7 @@
             draw();
         });
 
-        canvas.addEventListener('mousemove', (e) => {
+        document.addEventListener('mousemove', (e) => {
             if (!isDragging || axisPoints.length === 0) return;
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -450,11 +481,7 @@
             draw();
         });
 
-        canvas.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        canvas.addEventListener('mouseleave', () => {
+        document.addEventListener('mouseup', () => {
             isDragging = false;
         });
 
@@ -513,14 +540,16 @@
             const t = tasks[currentTaskIndex];
             const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--fg');
             
-            for (const [i, line] of t.lines.entries()) {
-                let color;
-                if (t.id === 6) {
-                    color = i === 0 ? getComputedStyle(document.documentElement).getPropertyValue('--blue') : getComputedStyle(document.documentElement).getPropertyValue('--red');
-                } else {
-                    color = i === 0 ? primaryColor : primaryColor;
+            if (t.lines) {
+                for (const [i, line] of t.lines.entries()) {
+                    let color;
+                    if (t.id === 6) {
+                        color = i === 0 ? getComputedStyle(document.documentElement).getPropertyValue('--blue') : getComputedStyle(document.documentElement).getPropertyValue('--red');
+                    } else {
+                        color = i === 0 ? primaryColor : primaryColor;
+                    }
+                    drawLine(line, color, 2);
                 }
-                drawLine(line, color, 2);
             }
 
             if (t.id === 5) {
@@ -555,6 +584,8 @@
 
         // ----- Ellenőrzés és státusz -----
         const statusEl = document.getElementById('status');
+        const solvedTasks = [];
+
         function statusMsg(msg, ok=null) {
             statusEl.textContent = msg;
             statusEl.className = 'status' + (ok===true ? ' ok' : ok===false ? ' err' : '');
@@ -570,6 +601,14 @@
             const ok = t.check(axis);
             if (ok) {
                 statusMsg('Helyes megoldás!', true);
+                if (!solvedTasks.includes(t.id)) {
+                    solvedTasks.push(t.id);
+                    updateTaskButtons();
+                }
+                // Check if all tasks are solved
+                if (solvedTasks.length === tasks.length) {
+                    showEndMessage();
+                }
             } else {
                 statusMsg('Nem helyes, próbáld újra.', false);
             }
@@ -579,6 +618,14 @@
             const t = tasks[currentTaskIndex];
             if (t.impossible) {
                 statusMsg('Helyes megoldás! (Ez a feladat valóban lehetetlen.)', true);
+                if (!solvedTasks.includes(t.id)) {
+                    solvedTasks.push(t.id);
+                    updateTaskButtons();
+                }
+                // Check if all tasks are solved
+                if (solvedTasks.length === tasks.length) {
+                    showEndMessage();
+                }
             } else {
                 statusMsg('Ez a feladat megoldható. Próbáld meg újra!', false);
             }
@@ -588,10 +635,25 @@
         let currentTaskIndex = 0;
 
         const taskText = document.getElementById('taskText');
+        const taskContainer = document.getElementById('taskContainer');
+        const endMessage = document.getElementById('endMessage');
+
         function updateTaskText() { taskText.textContent = tasks[currentTaskIndex].text; }
 
         function gotoTask(idx) {
-            currentTaskIndex = Math.max(0, Math.min(tasks.length-1, idx));
+            if (idx >= tasks.length) {
+                if (solvedTasks.length === tasks.length) {
+                    showEndMessage();
+                    return;
+                } else {
+                    // Stay on the last task if not all are solved
+                    idx = tasks.length - 1;
+                }
+            }
+            if (idx < 0) {
+                 idx = 0;
+            }
+            currentTaskIndex = idx;
             axisPoints = [];
             
             if (tasks[currentTaskIndex].id === 4 || tasks[currentTaskIndex].id === 6) {
@@ -604,6 +666,18 @@
             updateTaskButtons();
             draw();
             statusMsg('');
+        }
+
+        function showEndMessage() {
+            taskContainer.style.display = 'none';
+            endMessage.style.display = 'block';
+        }
+
+        function resetGame() {
+            solvedTasks.length = 0; // Clear the solved tasks array
+            taskContainer.style.display = 'block';
+            endMessage.style.display = 'none';
+            gotoTask(0);
         }
 
         const toggleWrap = document.getElementById('taskToggle');
@@ -619,8 +693,16 @@
 
         function updateTaskButtons() {
             [...toggleWrap.children].forEach((btn, i) => {
-                if (i === currentTaskIndex) btn.classList.add('active');
-                else btn.classList.remove('active');
+                if (i === currentTaskIndex) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+                if (solvedTasks.includes(tasks[i].id)) {
+                    btn.classList.add('solved');
+                } else {
+                    btn.classList.remove('solved');
+                }
             });
         }
 
@@ -629,6 +711,7 @@
         document.getElementById('impossibleBtn').addEventListener('click', markImpossible);
         document.getElementById('prevBtn').addEventListener('click', () => gotoTask(currentTaskIndex - 1));
         document.getElementById('nextBtn').addEventListener('click', () => gotoTask(currentTaskIndex + 1));
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
 
         // Init
         buildTaskButtons();
