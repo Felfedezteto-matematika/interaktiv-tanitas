@@ -4,16 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Duplán tükrözés</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-
         :root {
-            --bg: #f5f5f5;
-            --fg: #111111;
-            --muted: #666666;
-            --green: #4CAF50;
-            --red: #F44336;
+            --bg: #ffffff;
+            --fg: #1a1a1a;
+            --card-bg: #f9fafb;
             --border: #e0e0e0;
+            --green: #22c55e;
+            --green-dark: #16a34a;
+            --blue: #3b82f6;
+            --red: #ef4444;
+            --text-muted: #757575;
+            --shadow: 0 2px 4px rgba(0,0,0,0.05);
+            --transition: all 0.2s ease-in-out;
+            --yellow: #facc15;
         }
 
         html, body {
@@ -21,174 +28,216 @@
             padding: 0;
             background: var(--bg);
             color: var(--fg);
-        }
-
-        body {
             font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            transition: background var(--transition), color var(--transition);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
-            padding: 10px; /* Reduced padding */
+            padding: 24px 16px;
         }
 
         .container {
-            background-color: var(--bg);
-            padding: 2rem; /* Reduced padding */
+            max-width: 980px;
+            width: 100%;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2rem;
+            margin: 0 0 4px 0;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            border: 1px solid var(--border);
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 700px; /* Reduced max-width */
-            text-align: center;
+            padding: 20px;
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            transition: background var(--transition), box-shadow var(--transition), border-color var(--transition);
         }
 
-        h1, h2 {
-            color: var(--fg);
-            font-weight: 600;
+        .task-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .canvas-wrap {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            transition: background var(--transition);
         }
         
-        h2 {
-            font-size: 1.15rem; /* Reduced font size */
-            margin-top: 0;
-            margin-bottom: 1rem; /* Reduced margin */
-        }
-
-        p {
-            color: var(--muted);
-            font-size: 1rem;
-            line-height: 1.5;
-        }
-
         #gameCanvas {
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            background-color: var(--bg);
-            cursor: crosshair;
-            margin: 0 auto;
             display: block;
-            width: 500px; /* Reduced width */
-            height: 350px; /* Reduced height */
-        }
-        
-        .game-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .top-controls {
             width: 100%;
+            max-width: 940px;
+            height: 400px;
+            cursor: crosshair;
+        }
+
+        .controls {
             display: flex;
-            justify-content: center;
-            align-items: center;
             flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-        }
-        
-        .round-navigation {
-            display: flex;
+            gap: 10px;
             align-items: center;
-            justify-content: center;
-            background-color: #fff;
-            border-radius: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            padding: 0.5rem;
-            margin-right: 1rem;
-        }
-        
-        .round-navigation .toggle-btn {
-            background: none;
-            border: none;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            color: var(--fg);
-            padding: 0.5rem 1rem;
-            border-radius: 15px;
-            transition: all 0.3s;
+            margin-top: 20px;
         }
 
-        .round-navigation .toggle-btn:hover {
-            background-color: #f0f0f0;
+        .status {
+            margin-top: 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
         }
 
-        .round-navigation .toggle-btn.active {
-            background-color: var(--green);
-            color: #fff;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        .status.ok {
+            color: var(--green-dark);
         }
 
-        .feedback-box {
-            margin-top: 1.5rem;
-            min-height: 40px;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        
-        .correct {
-            color: var(--green);
-        }
-
-        .incorrect {
+        .status.err {
             color: var(--red);
         }
+        
+        .status.info {
+            color: var(--blue);
+        }
 
-        .unit-info {
+        .task-toggle {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+
+        .task-toggle button {
+            padding: 6px 12px;
+            background: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             font-size: 0.9rem;
-            color: var(--muted);
-            margin-top: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
         }
         
-        .unit-line {
-            display: inline-block;
-            width: 50px;
-            height: 2px;
-            background-color: var(--fg);
-            margin-left: 0.5rem;
-            vertical-align: middle;
+        .task-toggle button.active {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+        
+        .task-toggle button.solved {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+        
+        .task-toggle button:hover {
+            border-color: var(--text-muted);
+            background-color: #f5f5f5;
+        }
+        
+        .task-toggle button.active:hover,
+        .task-toggle button.solved:hover {
+            background: var(--green-dark);
+        }
+
+        button.primary {
+            background: var(--green);
+            color: #fff;
+            border: 1px solid var(--green);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        button.primary:hover {
+            background: var(--green-dark);
+            border-color: var(--green-dark);
+        }
+
+        button.secondary {
+            background: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        
+        button.secondary.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--border);
+        }
+        
+        button.secondary:hover {
+            border-color: var(--text-muted);
+            background-color: #f5f5f5;
+        }
+        
+        button.secondary.disabled:hover {
+            border-color: var(--border);
+            background-color: var(--bg);
         }
 
         .btn-container {
             display: flex;
             justify-content: center;
-            gap: 15px;
-            margin-top: 1rem; /* Reduced margin */
+            gap: 10px;
         }
 
-        button.action-btn {
-            background-color: var(--fg);
-            color: var(--bg);
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s ease;
-        }
-        
-        button.action-btn:hover {
-            background-color: var(--muted);
+        .full-width {
+            width: 100%;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Duplán tükrözés</h1>
-        <div id="task-container">
-            <h2 id="task-title">A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.</h2>
-            <div class="game-controls">
-                <div class="top-controls">
-                    <div id="round-navigation" class="round-navigation"></div>
-                    <div class="unit-info">
-                        1 egység távolság: <span class="unit-line"></span>
-                    </div>
-                </div>
+        <div class="subtitle">Kattints a vászonra, hogy elhelyezd a P'' pontot.</div>
+
+        <div class="card">
+            <h2 id="task-title" class="task-title"></h2>
+            
+            <div class="canvas-wrap">
+                <canvas id="gameCanvas" width="940" height="400"></canvas>
             </div>
-            <canvas id="gameCanvas" width="500" height="350"></canvas>
-            <div id="feedback" class="feedback-box"></div>
-            <div class="btn-container">
-                <button id="nextProblemBtn" class="action-btn" style="display: none;">Következő feladat</button>
-                <button id="retryBtn" class="action-btn" style="display: none;">Nézzünk egy hasonló feladatot!</button>
+
+            <div class="controls">
+                <div id="action-buttons" class="btn-container">
+                    <button id="prevBtn" class="secondary">Előző</button>
+                    <button id="nextBtn" class="secondary">Következő</button>
+                    <button id="retryBtn" class="secondary">Újra próbálom!</button>
+                </div>
+                <div class="task-toggle" id="round-navigation"></div>
+            </div>
+
+            <div id="feedback" class="status info">Kattints a vászonra, hogy elhelyezd a P'' pontot.</div>
+            <div id="endMessage" style="display: none;" class="end-message">
+                <h2 style="margin-top: 0;">Gratulálunk, az összes feladatot sikeresen megoldottad!</h2>
             </div>
         </div>
     </div>
@@ -199,31 +248,37 @@
             const ctx = canvas.getContext('2d');
             const feedbackEl = document.getElementById('feedback');
             const roundNavigationEl = document.getElementById('round-navigation');
-            const nextProblemBtn = document.getElementById('nextProblemBtn');
-            const retryBtn = document.getElementById('retryBtn');
             const taskTitleEl = document.getElementById('task-title');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const retryBtn = document.getElementById('retryBtn');
+            const endMessageEl = document.getElementById('endMessage');
 
             // --- Game State Variables ---
-            const tolerance = 30; // Increased tolerance in pixels
-            const totalRounds = 5;
+            const tolerance = 30;
+            const totalRounds = 6;
+            const margin = 50;
             let currentRound = 1;
             let correctPoint;
             let pPoint;
-            let redLine, blueLine;
+            let redLine, blueLine, greenLine;
             let isRoundFinished = false;
-
-            // --- Game Logic Functions ---
+            let userGuessPoint = null;
+            let solvedRounds = new Set();
             
-            // Generate a random point within a constrained area of the canvas
+            // --- Helper Functions ---
             function generateRandomPoint() {
-                const margin = 50;
                 return {
                     x: Math.random() * (canvas.width - 2 * margin) + margin,
                     y: Math.random() * (canvas.height - 2 * margin) + margin
                 };
             }
+            
+            function isPointInBounds(point) {
+                return point.x > margin && point.x < canvas.width - margin &&
+                       point.y > margin && point.y < canvas.height - margin;
+            }
 
-            // Generate two random parallel lines centered on the canvas
             function generateParallelLines() {
                 const slope = Math.tan(Math.random() * Math.PI);
                 const midHeight = canvas.height / 2;
@@ -238,52 +293,82 @@
                 ];
             }
 
-            // Function to check if a point is between two parallel lines
+            function generateIntersectingLines(centerPoint) {
+                const angle1 = Math.random() * Math.PI;
+                const angle2 = angle1 + Math.random() * (Math.PI / 2) + Math.PI / 6; 
+                return [
+                    { m: Math.tan(angle1), c: centerPoint.y - Math.tan(angle1) * centerPoint.x },
+                    { m: Math.tan(angle2), c: centerPoint.y - Math.tan(angle2) * centerPoint.x }
+                ];
+            }
+            
+            function generateThreeIntersectingLines(centerPoint) {
+                let angle1, angle2, angle3;
+                let isValid = false;
+                const minAngleRad = Math.PI / 9; // 20 degrees
+                
+                while (!isValid) {
+                    angle1 = Math.random() * Math.PI;
+                    angle2 = angle1 + Math.random() * (Math.PI / 2) + Math.PI / 6;
+                    angle3 = angle2 + Math.random() * (Math.PI / 2) + Math.PI / 6;
+                    
+                    const a1 = angle1 % (2 * Math.PI);
+                    const a2 = angle2 % (2 * Math.PI);
+                    const a3 = angle3 % (2 * Math.PI);
+                    
+                    let angles = [a1, a2, a3].sort((a,b) => a-b);
+                    
+                    if (angles[1] - angles[0] > minAngleRad &&
+                        angles[2] - angles[1] > minAngleRad &&
+                        (angles[0] + 2 * Math.PI) - angles[2] > minAngleRad) {
+                        isValid = true;
+                    }
+                }
+
+                return [
+                    { m: Math.tan(angle1), c: centerPoint.y - Math.tan(angle1) * centerPoint.x },
+                    { m: Math.tan(angle2), c: centerPoint.y - Math.tan(angle2) * centerPoint.x },
+                    { m: Math.tan(angle3), c: centerPoint.y - Math.tan(angle3) * centerPoint.x }
+                ];
+            }
+
             function isPointBetweenLines(point, line1, line2) {
                 const signedDistance1 = (line1.m * point.x - point.y + line1.c) / Math.sqrt(line1.m * line1.m + 1);
                 const signedDistance2 = (line2.m * point.x - point.y + line2.c) / Math.sqrt(line2.m * line2.m + 1);
-                
                 return signedDistance1 * signedDistance2 < 0;
             }
 
-            // Function to reflect a point across a line
             function reflectPoint(point, line) {
                 const a = line.m;
                 const b = -1;
                 const c = line.c;
                 const denominator = a * a + b * b;
+                if (denominator === 0) return { x: point.x, y: point.y };
                 const numerator = a * point.x + b * point.y + c;
-                
                 const reflectedX = point.x - 2 * a * numerator / denominator;
                 const reflectedY = point.y - 2 * b * numerator / denominator;
-                
                 return { x: reflectedX, y: reflectedY };
             }
             
-            // Function to calculate the distance between two points
             function getDistance(p1, p2) {
                 const dx = p1.x - p2.x;
                 const dy = p1.y - p2.y;
                 return Math.sqrt(dx * dx + dy * dy);
             }
             
-            // Function to calculate the distance from a point to a line
             function getDistanceToLine(point, line) {
                 return Math.abs(line.m * point.x - point.y + line.c) / Math.sqrt(line.m * line.m + 1);
             }
 
-            // Draw a point on the canvas
             function drawPoint(point, label, color = '#111', radius = 6) {
                 ctx.fillStyle = color;
                 ctx.beginPath();
                 ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.font = '16px Inter';
-                // Adjusting the label position to be closer to the point
                 ctx.fillText(label, point.x + 8, point.y - 8);
             }
             
-            // Draw a line on the canvas
             function drawLine(line, color = '#333') {
                 ctx.strokeStyle = color;
                 ctx.lineWidth = 2;
@@ -292,145 +377,177 @@
                 const y1 = line.m * x1 + line.c;
                 const x2 = canvas.width;
                 const y2 = line.m * x2 + line.c;
-                
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.stroke();
             }
 
-            // Function to display an arrow showing translation
-            function drawTranslationArrow(start, end, color = '#888') {
-                ctx.strokeStyle = color;
-                ctx.fillStyle = color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(start.x, start.y);
-                ctx.lineTo(end.x, end.y);
-                ctx.stroke();
-            
-                const angle = Math.atan2(end.y - start.y, end.x - start.x);
-                const arrowSize = 8;
-                ctx.beginPath();
-                ctx.moveTo(end.x, end.y);
-                ctx.lineTo(end.x - arrowSize * Math.cos(angle - Math.PI / 6), end.y - arrowSize * Math.sin(angle - Math.PI / 6));
-                ctx.lineTo(end.x - arrowSize * Math.cos(angle + Math.PI / 6), end.y - arrowSize * Math.sin(angle + Math.PI / 6));
-                ctx.closePath();
-                ctx.fill();
+            function redrawCanvas() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (redLine) drawLine(redLine, 'red');
+                if (blueLine) drawLine(blueLine, 'blue');
+                if (greenLine) drawLine(greenLine, 'green');
+                if (pPoint) drawPoint(pPoint, 'P');
+                if (userGuessPoint) {
+                    drawPoint(userGuessPoint, "P'' (Te)", 'blue');
+                }
+                if (isRoundFinished) {
+                    drawPoint(correctPoint, "P'' (Helyes)", 'green');
+                }
             }
 
-            // Check if a point is within the canvas bounds
-            function isPointInBounds(point) {
-                const margin = 10;
-                return point.x > margin && point.x < canvas.width - margin &&
-                       point.y > margin && point.y < canvas.height - margin;
-            }
-
-            // Set up a new round
             function setupNewRound(round) {
                 currentRound = round;
                 
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                let pPrime;
+                // Reset state
+                userGuessPoint = null;
+                isRoundFinished = false;
+                redLine = null;
+                blueLine = null;
+                greenLine = null;
+                pPoint = null;
+                correctPoint = null;
+                endMessageEl.style.display = 'none';
+
+                let pPrime, pDoublePrime;
                 let isSetupValid = false;
-
+                
                 while (!isSetupValid) {
-                    let lines = generateParallelLines();
-                    let separation = getDistance(
-                        { x: 0, y: lines[0].c }, 
-                        { x: 0, y: lines[1].c }
-                    );
-                    
-                    pPoint = generateRandomPoint();
-
-                    if (getDistanceToLine(pPoint, lines[0]) < getDistanceToLine(pPoint, lines[1])) {
+                    isSetupValid = true;
+                    if (currentRound <= 4) {
+                        let lines = generateParallelLines();
                         redLine = lines[0];
                         blueLine = lines[1];
-                    } else {
-                        redLine = lines[1];
-                        blueLine = lines[0];
+                        const separation = getDistanceToLine({x: 0, y: redLine.c}, blueLine);
+                        
+                        switch(currentRound) {
+                            case 1:
+                                pPoint = generateRandomPoint();
+                                pPrime = reflectPoint(pPoint, redLine);
+                                correctPoint = reflectPoint(pPrime, blueLine);
+                                if (isPointBetweenLines(pPoint, redLine, blueLine) || getDistanceToLine(pPoint, redLine) > separation || !isPointInBounds(pPrime) || !isPointInBounds(correctPoint)) {
+                                     isSetupValid = false;
+                                     continue;
+                                }
+                                break;
+                            case 2:
+                                pPoint = generateRandomPoint();
+                                pPrime = reflectPoint(pPoint, redLine);
+                                correctPoint = reflectPoint(pPrime, blueLine);
+                                if (isPointBetweenLines(pPoint, redLine, blueLine) || getDistanceToLine(pPoint, redLine) < separation || !isPointInBounds(pPrime) || !isPointInBounds(correctPoint)) {
+                                     isSetupValid = false;
+                                     continue;
+                                }
+                                break;
+                            case 3:
+                                pPoint = generateRandomPoint();
+                                pPrime = reflectPoint(pPoint, redLine);
+                                correctPoint = reflectPoint(pPrime, blueLine);
+                                if (!isPointBetweenLines(pPoint, redLine, blueLine) || !isPointInBounds(pPrime) || !isPointInBounds(correctPoint)) {
+                                    isSetupValid = false;
+                                    continue;
+                                }
+                                break;
+                            case 4:
+                                pPoint = generateRandomPoint();
+                                pPrime = reflectPoint(pPoint, redLine);
+                                correctPoint = reflectPoint(pPrime, blueLine);
+                                if (isPointBetweenLines(pPoint, redLine, blueLine) || getDistanceToLine(pPoint, blueLine) > getDistanceToLine(pPoint, redLine) || getDistanceToLine(pPoint, blueLine) < 20 || !isPointInBounds(pPrime) || !isPointInBounds(correctPoint)) {
+                                     isSetupValid = false;
+                                     continue;
+                                }
+                                break;
+                        }
+
+                    } else if (currentRound === 5) {
+                        let center = generateRandomPoint(canvas.width / 4);
+                        let lines = generateIntersectingLines(center);
+                        redLine = lines[0];
+                        blueLine = lines[1];
+                        pPoint = generateRandomPoint(100);
+                        
+                        pPrime = reflectPoint(pPoint, redLine);
+                        correctPoint = reflectPoint(pPrime, blueLine);
+                        
+                        if (Math.abs(getDistanceToLine(pPoint, redLine)) < 20 || Math.abs(getDistanceToLine(pPoint, blueLine)) < 20 || !isPointInBounds(pPrime) || !isPointInBounds(correctPoint) || isPointBetweenLines(pPoint, redLine, blueLine)) {
+                            isSetupValid = false;
+                            continue;
+                        }
+                    } else if (currentRound === 6) {
+                        let center = generateRandomPoint(canvas.width / 4);
+                        let lines = generateThreeIntersectingLines(center);
+                        redLine = lines[0];
+                        blueLine = lines[1];
+                        greenLine = lines[2];
+                        pPoint = generateRandomPoint(100);
+
+                        pPrime = reflectPoint(pPoint, redLine);
+                        pDoublePrime = reflectPoint(pPrime, blueLine);
+                        correctPoint = reflectPoint(pDoublePrime, greenLine);
+
+                        if (Math.abs(getDistanceToLine(pPoint, redLine)) < 20 || Math.abs(getDistanceToLine(pPoint, blueLine)) < 20 || Math.abs(getDistanceToLine(pPoint, greenLine)) < 20 || !isPointInBounds(pPrime) || !isPointInBounds(pDoublePrime) || !isPointInBounds(correctPoint) || isPointBetweenLines(pPoint, redLine, blueLine) || !isPointBetweenLines(pPrime, redLine, blueLine) || isPointBetweenLines(pDoublePrime, blueLine, greenLine) ) {
+                            isSetupValid = false;
+                            continue;
+                        }
                     }
 
-                    switch(currentRound) {
-                        case 1:
-                        case 2:
-                            if (!isPointBetweenLines(pPoint, redLine, blueLine) && getDistanceToLine(pPoint, redLine) <= separation) {
-                                pPrime = reflectPoint(pPoint, redLine);
-                                correctPoint = reflectPoint(pPrime, blueLine);
-                                isSetupValid = isPointInBounds(pPoint) && isPointInBounds(pPrime) && isPointInBounds(correctPoint);
-                            }
-                            break;
-                        case 3:
-                            if (!isPointBetweenLines(pPoint, redLine, blueLine) && getDistanceToLine(pPoint, redLine) > separation) {
-                                pPrime = reflectPoint(pPoint, redLine);
-                                correctPoint = reflectPoint(pPrime, blueLine);
-                                isSetupValid = isPointInBounds(pPoint) && isPointInBounds(pPrime) && isPointInBounds(correctPoint);
-                            }
-                            break;
-                        case 4:
-                            if (isPointBetweenLines(pPoint, redLine, blueLine)) {
-                                pPrime = reflectPoint(pPoint, redLine);
-                                correctPoint = reflectPoint(pPrime, blueLine);
-                                isSetupValid = isPointInBounds(pPoint) && isPointInBounds(pPrime) && isPointInBounds(correctPoint);
-                            }
-                            break;
-                        case 5:
-                            pPrime = reflectPoint(pPoint, blueLine);
-                            correctPoint = reflectPoint(pPrime, redLine);
-                            isSetupValid = isPointInBounds(pPoint) && isPointInBounds(pPrime) && isPointInBounds(correctPoint);
-                            break;
+                    if (correctPoint && (!isPointInBounds(correctPoint) || !isPointInBounds(pPoint))) {
+                        isSetupValid = false;
                     }
                 }
 
-                if (currentRound === 5) {
-                    taskTitleEl.textContent = "A P pontot tükrözzük a kék, majd a piros egyenesre. Helyezd el az így kapott P'' pontot a síkon.";
-                } else {
-                    taskTitleEl.textContent = "A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.";
-                }
-
+                updateTaskTitle();
                 updateRoundToggle();
-
-                drawLine(redLine, 'red');
-                drawLine(blueLine, 'blue');
-                drawPoint(pPoint, 'P');
+                updateButtonState();
+                redrawCanvas();
                 
-                feedbackEl.textContent = '';
-                feedbackEl.classList.remove('correct', 'incorrect');
-                nextProblemBtn.style.display = 'none';
-                retryBtn.style.display = 'none';
+                feedbackEl.textContent = 'Kattints a vászonra, hogy elhelyezd a P\'\' pontot.';
+                feedbackEl.classList.add('info');
+                feedbackEl.classList.remove('ok', 'err');
+                
                 canvas.style.cursor = 'crosshair';
-                isRoundFinished = false;
             }
 
             function handleGuess(event) {
                 if (isRoundFinished) return;
 
                 const rect = canvas.getBoundingClientRect();
-                const guessPoint = {
+                userGuessPoint = {
                     x: event.clientX - rect.left,
                     y: event.clientY - rect.top
                 };
+                
+                checkAnswer();
+            }
 
-                const distance = getDistance(guessPoint, correctPoint);
+            function checkAnswer() {
+                if (!userGuessPoint || isRoundFinished) return;
+                
+                const distance = getDistance(userGuessPoint, correctPoint);
                 const distanceInUnits = (distance / 50).toFixed(2);
                 
-                drawPoint(guessPoint, "P'' (Te)", 'blue');
-                drawPoint(correctPoint, "P'' (Helyes)", 'green');
-                drawTranslationArrow(pPoint, correctPoint, 'green');
+                isRoundFinished = true;
+                redrawCanvas();
 
                 if (distance <= tolerance) {
-                    feedbackEl.textContent = `Helyes válasz! Pontos távolság: ${distanceInUnits} egység`;
-                    feedbackEl.classList.add('correct');
-                    isRoundFinished = true;
+                    feedbackEl.textContent = `Helyes válasz! Pontos távolság: ${distanceInUnits} egység.`;
+                    feedbackEl.classList.add('ok');
+                    feedbackEl.classList.remove('info');
                     
-                    nextProblemBtn.style.display = 'block';
-                    canvas.style.cursor = 'default';
+                    solvedRounds.add(currentRound);
+                    updateRoundToggle();
+                    
+                    if (solvedRounds.size === totalRounds) {
+                        endMessageEl.style.display = 'block';
+                    }
+
                 } else {
-                    feedbackEl.textContent = `Próbálkozz újra egy hasonló feladattal! A tipp és a helyes válasz között a távolság: ${distanceInUnits} egység`;
-                    feedbackEl.classList.add('incorrect');
-                    retryBtn.style.display = 'block';
-                    canvas.style.cursor = 'default';
+                    feedbackEl.textContent = `A tipp és a helyes válasz közötti távolság: ${distanceInUnits} egység. Próbáld újra!`;
+                    feedbackEl.classList.add('err');
+                    feedbackEl.classList.remove('info');
                 }
+                updateButtonState();
+                canvas.style.cursor = 'default';
             }
             
             function buildRoundToggle() {
@@ -438,31 +555,66 @@
                     const btn = document.createElement('button');
                     btn.textContent = i;
                     btn.className = 'toggle-btn';
-                    btn.addEventListener('click', () => setupNewRound(i));
+                    btn.addEventListener('click', () => {
+                        if (currentRound !== i) {
+                            setupNewRound(i);
+                        }
+                    });
                     roundNavigationEl.appendChild(btn);
+                }
+            }
+
+            function updateButtonState() {
+                if (currentRound === 1) {
+                    prevBtn.classList.add('disabled');
+                } else {
+                    prevBtn.classList.remove('disabled');
+                }
+
+                if (currentRound === totalRounds) {
+                    nextBtn.classList.add('disabled');
+                } else {
+                    nextBtn.classList.remove('disabled');
                 }
             }
 
             function updateRoundToggle() {
                 const buttons = roundNavigationEl.querySelectorAll('.toggle-btn');
                 buttons.forEach((btn, index) => {
-                    if (index + 1 === currentRound) {
+                    const roundNum = index + 1;
+                    btn.classList.remove('active', 'solved');
+                    if (roundNum === currentRound) {
                         btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
+                    }
+                    if (solvedRounds.has(roundNum)) {
+                        btn.classList.add('solved');
                     }
                 });
             }
 
-            canvas.addEventListener('click', handleGuess);
-            
-            nextProblemBtn.addEventListener('click', () => {
-                if (currentRound < totalRounds) {
-                    currentRound++;
-                }
-                setupNewRound(currentRound);
-            });
+            function updateTaskTitle() {
+                const tasks = {
+                    1: "A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.",
+                    2: "A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.",
+                    3: "A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.",
+                    4: "A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.",
+                    5: "A P pontot tükrözzük a piros, majd a kék egyenesre. Helyezd el az így kapott P'' pontot a síkon.",
+                    6: "A P pontot tükrözzük a piros, majd a kék, majd a zöld egyenesre. Helyezd el az így kapott P''' pontot a síkon."
+                };
+                taskTitleEl.textContent = tasks[currentRound];
+            }
 
+            canvas.addEventListener('click', handleGuess);
+            prevBtn.addEventListener('click', () => {
+                if (currentRound > 1) {
+                    setupNewRound(currentRound - 1);
+                }
+            });
+            nextBtn.addEventListener('click', () => {
+                if (currentRound < totalRounds) {
+                    setupNewRound(currentRound + 1);
+                }
+            });
             retryBtn.addEventListener('click', () => {
                 setupNewRound(currentRound);
             });
