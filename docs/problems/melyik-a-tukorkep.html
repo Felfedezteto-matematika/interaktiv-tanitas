@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="hu">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Melyik lehet tükörkép?</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,22 +20,32 @@
             --red: #ef4444;
             --yellow: #facc15;
             --text-muted: #757575;
-            --shadow: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             --transition: all 0.2s ease-in-out;
         }
 
-        html, body {
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
             margin: 0;
             padding: 0;
             background: var(--bg);
             color: var(--fg);
             font-family: 'Inter', sans-serif;
             line-height: 1.6;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
             display: flex;
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            padding: 24px 16px;
+            padding: 16px;
         }
 
         .container {
@@ -44,34 +55,35 @@
 
         h1 {
             font-weight: 700;
-            font-size: 2rem;
+            font-size: clamp(1.5rem, 5vw, 2rem);
             margin: 0 0 4px 0;
         }
 
         .subtitle {
             color: var(--text-muted);
-            font-size: 1rem;
-            margin-bottom: 20px;
+            font-size: clamp(0.85rem, 3vw, 1rem);
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
         .card {
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px;
             background: var(--card-bg);
             box-shadow: var(--shadow);
-            margin-top: 20px;
+            margin-top: 16px;
         }
 
         .task-title {
-            font-size: 1.1rem;
+            font-size: clamp(0.95rem, 3vw, 1.1rem);
             font-weight: 500;
             margin-top: 0;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            line-height: 1.4;
         }
 
         .canvas-wrap {
@@ -80,53 +92,74 @@
             border-radius: 10px;
             overflow: hidden;
             background: #fff;
+            width: 100%;
+            margin: 0 auto;
         }
-        
+
         #gameCanvas {
             display: block;
             width: 100%;
-            max-width: 940px;
-            height: 500px;
+            height: auto;
             cursor: pointer;
+            touch-action: manipulation;
         }
-        
+
         .controls {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 16px;
+            justify-content: center;
         }
 
         .feedback {
             margin-top: 12px;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
             min-height: 20px;
+            text-align: center;
+            line-height: 1.4;
         }
 
-        .feedback.ok { color: var(--green-dark); }
-        .feedback.err { color: var(--red); }
-        .feedback.info { color: var(--blue); }
+        .feedback.ok {
+            color: var(--green-dark);
+        }
+
+        .feedback.err {
+            color: var(--red);
+        }
+
+        .feedback.info {
+            color: var(--blue);
+        }
+
+        .task-toggle {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
 
         .task-toggle button {
-            padding: 8px 16px;
+            padding: 8px 12px;
             background: var(--bg);
             color: var(--fg);
             border: 1px solid var(--border);
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
             font-weight: 500;
             cursor: pointer;
             transition: var(--transition);
+            white-space: nowrap;
+            touch-action: manipulation;
         }
-        
+
         .task-toggle button.active {
             background: var(--blue);
             color: #fff;
             border-color: var(--blue);
         }
-        
+
         .task-toggle button:hover:not(.active) {
             border-color: var(--text-muted);
             background-color: #f5f5f5;
@@ -138,11 +171,12 @@
             border: 1px solid var(--green);
             padding: 10px 16px;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
             font-weight: 500;
             cursor: pointer;
             transition: var(--transition);
             white-space: nowrap;
+            touch-action: manipulation;
         }
 
         button.primary:hover {
@@ -156,19 +190,39 @@
             border: 1px solid var(--border);
             padding: 10px 16px;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
             font-weight: 500;
             cursor: pointer;
             transition: var(--transition);
             white-space: nowrap;
+            touch-action: manipulation;
         }
-        
+
         button.secondary:hover {
             border-color: var(--text-muted);
             background-color: #f5f5f5;
         }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .card {
+                padding: 12px;
+            }
+
+            .controls {
+                gap: 8px;
+            }
+
+            button {
+                padding: 8px 12px !important;
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>Melyik lehet tükörkép?</h1>
@@ -183,9 +237,9 @@
 
         <div class="card">
             <h2 id="task-title" class="task-title"></h2>
-            
+
             <div class="canvas-wrap">
-                <canvas id="gameCanvas" width="940" height="500"></canvas>
+                <canvas id="gameCanvas"></canvas>
             </div>
 
             <div class="controls">
@@ -198,7 +252,7 @@
     </div>
 
     <script>
-    window.onload = function() {
+        // Global variables
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const feedbackEl = document.getElementById('feedback');
@@ -210,13 +264,14 @@
         const retryBtn = document.getElementById('retryBtn');
 
         let currentTask = 1;
-        const margin = 20;
-        
         let originalShape = null;
         let candidateShapes = [];
         let selectedIndices = new Set();
         let correctIndices = new Set();
-        
+        let actualCanvasWidth = 940;
+        let actualCanvasHeight = 500;
+        let scaleFactor = 1;
+
         const colors = {
             red: '#ef4444',
             blue: '#3b82f6',
@@ -225,11 +280,25 @@
             text: '#1a1a1a',
             line: '#333333'
         };
-        
-        const distSq = (p1, p2) => (p1.x - p2.x)**2 + (p1.y - p2.y)**2;
+
+        // Utility functions
+        const distSq = (p1, p2) => (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2;
+
+        function scalePoint(point) {
+            return {
+                x: point.x * scaleFactor,
+                y: point.y * scaleFactor,
+                color: point.color
+            };
+        }
+
+        function scaleValue(value) {
+            return value * scaleFactor;
+        }
 
         function getShapeBounds(shape, padding = 0) {
             const points = shape.type === 'segment' ? [shape.p1, shape.p2] : shape.vertices;
+            if (!points || points.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
             const xs = points.map(p => p.x);
             const ys = points.map(p => p.y);
             return {
@@ -241,7 +310,7 @@
         }
 
         function isOverlapping(newShape, existingShapes) {
-            const padding = 20; // Visual separation
+            const padding = 20 * scaleFactor;
             const newBounds = getShapeBounds(newShape, padding);
 
             for (const existingShape of existingShapes) {
@@ -249,51 +318,55 @@
                 const xOverlap = newBounds.minX < existingBounds.maxX && newBounds.maxX > existingBounds.minX;
                 const yOverlap = newBounds.minY < existingBounds.maxY && newBounds.maxY > existingBounds.minY;
                 if (xOverlap && yOverlap) {
-                    return true; // Overlap detected
+                    return true;
                 }
             }
-            return false; // No overlap
+            return false;
         }
 
         function isShapeInBounds(shape, margin) {
             const bounds = getShapeBounds(shape);
-            return bounds.minX >= margin && bounds.maxX <= canvas.width - margin &&
-                   bounds.minY >= margin && bounds.maxY <= canvas.height - margin;
+            const scaledMargin = margin * scaleFactor;
+            return bounds.minX >= scaledMargin && bounds.maxX <= actualCanvasWidth - scaledMargin &&
+                bounds.minY >= scaledMargin && bounds.maxY <= actualCanvasHeight - scaledMargin;
         }
 
         function drawShape(shape, options = {}) {
+            if (!shape) return;
             if (shape.type === 'segment') drawSegment(shape, options);
             else drawPolygon(shape, options);
         }
 
         function drawSegment(segment, options = {}) {
             const { isOriginal = false, isSelected = false } = options;
-            
+
             ctx.beginPath();
             ctx.moveTo(segment.p1.x, segment.p1.y);
             ctx.lineTo(segment.p2.x, segment.p2.y);
-            
-            ctx.lineWidth = isSelected ? 5 : 3;
+
+            ctx.lineWidth = scaleValue(isSelected ? 5 : 3);
             ctx.strokeStyle = isSelected ? colors.blue : colors.line;
             ctx.stroke();
 
             [segment.p1, segment.p2].forEach(p => {
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 7, 0, 2 * Math.PI);
+                ctx.arc(p.x, p.y, scaleValue(7), 0, 2 * Math.PI);
                 ctx.fillStyle = p.color;
                 ctx.fill();
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = scaleValue(1.5);
                 ctx.strokeStyle = colors.text;
                 ctx.stroke();
             });
 
             if (isOriginal) {
-                const padding = 15;
+                const padding = scaleValue(15);
                 const bounds = getShapeBounds(segment);
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = scaleValue(2);
                 ctx.setLineDash([5, 5]);
-                ctx.strokeRect(bounds.minX-padding, bounds.minY-padding, (bounds.maxX-bounds.minX)+2*padding, (bounds.maxY-bounds.minY)+2*padding);
+                ctx.strokeRect(bounds.minX - padding, bounds.minY - padding,
+                    (bounds.maxX - bounds.minX) + 2 * padding,
+                    (bounds.maxY - bounds.minY) + 2 * padding);
                 ctx.setLineDash([]);
             }
         }
@@ -304,38 +377,40 @@
 
             ctx.beginPath();
             ctx.moveTo(vertices[0].x, vertices[0].y);
-            for(let i = 1; i < vertices.length; i++) {
+            for (let i = 1; i < vertices.length; i++) {
                 ctx.lineTo(vertices[i].x, vertices[i].y);
             }
             ctx.closePath();
 
-            ctx.lineWidth = isSelected ? 5 : 3;
+            ctx.lineWidth = scaleValue(isSelected ? 5 : 3);
             ctx.strokeStyle = isSelected ? colors.blue : colors.line;
             ctx.stroke();
 
             vertices.forEach(v => {
                 ctx.beginPath();
-                ctx.arc(v.x, v.y, 7, 0, 2 * Math.PI);
+                ctx.arc(v.x, v.y, scaleValue(7), 0, 2 * Math.PI);
                 ctx.fillStyle = v.color;
                 ctx.fill();
-                ctx.lineWidth = 1.5;
+                ctx.lineWidth = scaleValue(1.5);
                 ctx.strokeStyle = colors.text;
                 ctx.stroke();
             });
-            
+
             if (isOriginal) {
-                const padding = 20;
+                const padding = scaleValue(20);
                 const bounds = getShapeBounds(shape);
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = scaleValue(2);
                 ctx.setLineDash([5, 5]);
-                ctx.strokeRect(bounds.minX-padding, bounds.minY-padding, (bounds.maxX-bounds.minX)+2*padding, (bounds.maxY-bounds.minY)+2*padding);
+                ctx.strokeRect(bounds.minX - padding, bounds.minY - padding,
+                    (bounds.maxX - bounds.minX) + 2 * padding,
+                    (bounds.maxY - bounds.minY) + 2 * padding);
                 ctx.setLineDash([]);
             }
         }
 
         function redrawCanvas() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, actualCanvasWidth, actualCanvasHeight);
             if (originalShape) {
                 drawShape(originalShape, { isOriginal: true });
                 candidateShapes.forEach((shape, i) => {
@@ -350,62 +425,133 @@
             task2Btn.classList.remove('active');
             task3Btn.classList.remove('active');
             taskTitleEl.innerHTML = "A megadott szakaszt <b>középpontosan</b> tükröztük a sík egyik pontjára. Válaszd ki azokat a ponthalmazokat, amik a szakasz tükörképei lehetnek.";
-            feedbackEl.textContent = 'Kattints a szakaszokra a kijöléshez.';
+            feedbackEl.textContent = 'Kattints a szakaszokra a kijelöléshez.';
             feedbackEl.className = 'feedback info';
-            
+
             selectedIndices.clear();
             correctIndices.clear();
 
-            const p1 = { x: margin + 60, y: canvas.height / 2 + (Math.random() - 0.5) * 200, color: colors.red };
-            const p2 = { x: p1.x + 100 + Math.random() * 30, y: p1.y + (Math.random() - 0.5) * 50, color: colors.blue };
+            const margin = 20;
+            const scaledMargin = margin * scaleFactor;
+
+            // Create original shape with random positioning across canvas
+            const segmentLength = (100 + Math.random() * 30) * scaleFactor;
+            const segmentDx = segmentLength * (Math.random() - 0.5) * 2;
+            const segmentDy = Math.sqrt(segmentLength * segmentLength - segmentDx * segmentDx) * (Math.random() > 0.5 ? 1 : -1);
+
+            // Calculate valid range for p1 so that p2 also stays within bounds
+            const minX = segmentDx < 0 ? scaledMargin - segmentDx : scaledMargin;
+            const maxX = segmentDx > 0 ? actualCanvasWidth - scaledMargin - segmentDx : actualCanvasWidth - scaledMargin;
+            const minY = segmentDy < 0 ? scaledMargin - segmentDy : scaledMargin;
+            const maxY = segmentDy > 0 ? actualCanvasHeight - scaledMargin - segmentDy : actualCanvasHeight - scaledMargin;
+
+            const p1 = {
+                x: minX + Math.random() * (maxX - minX),
+                y: minY + Math.random() * (maxY - minY),
+                color: colors.red
+            };
+            const p2 = {
+                x: p1.x + segmentDx,
+                y: p1.y + segmentDy,
+                color: colors.blue
+            };
             originalShape = { type: 'segment', p1, p2 };
-            
+
             const originalDx = p2.x - p1.x;
             const originalDy = p2.y - p1.y;
-            const originalLength = Math.sqrt(originalDx**2 + originalDy**2);
+            const originalLength = Math.sqrt(originalDx ** 2 + originalDy ** 2);
 
             let generatedShapes = [];
             const numCorrect = 3;
-            const numIncorrect = 6;
+            // Ensure minimum 5 shapes even on mobile
+            const minShapes = 5;
+            const desiredIncorrect = Math.max(minShapes - numCorrect, 4);
+            const numIncorrect = Math.max(desiredIncorrect, Math.floor(actualCanvasWidth / 200));
 
+            // Generate correct shapes
             for (let i = 0; i < numCorrect; i++) {
-                let shape; let attempts = 0;
+                let shape;
+                let attempts = 0;
                 do {
-                    const startX = canvas.width * 0.4 + Math.random() * (canvas.width * 0.6 - 2 * margin);
-                    const startY = margin + Math.random() * (canvas.height - 2 * margin);
-                    shape = { type: 'segment', p1: { x: startX, y: startY, color: colors.blue }, p2: { x: startX + originalDx, y: startY + originalDy, color: colors.red }, isCorrect: true };
+                    // Randomly position shapes across entire canvas
+                    const availableWidth = actualCanvasWidth - 2 * scaledMargin - Math.abs(originalDx);
+                    const availableHeight = actualCanvasHeight - 2 * scaledMargin - Math.abs(originalDy);
+
+                    if (availableWidth <= 0 || availableHeight <= 0) {
+                        attempts = 100;
+                        continue;
+                    }
+
+                    const startX = scaledMargin + Math.random() * availableWidth;
+                    const startY = scaledMargin + Math.random() * availableHeight;
+
+                    shape = {
+                        type: 'segment',
+                        p1: { x: startX, y: startY, color: colors.blue },
+                        p2: { x: startX + originalDx, y: startY + originalDy, color: colors.red },
+                        isCorrect: true
+                    };
                     attempts++;
                 } while ((!isShapeInBounds(shape, margin) || isOverlapping(shape, [originalShape, ...generatedShapes])) && attempts < 100);
+
                 if (attempts < 100) generatedShapes.push(shape);
             }
 
+            // Generate incorrect shapes
             for (let i = 0; i < numIncorrect; i++) {
-                let shape; let attempts = 0;
+                let shape;
+                let attempts = 0;
                 do {
-                    const startX = canvas.width * 0.35 + Math.random() * (canvas.width * 0.65 - 2 * margin);
-                    const startY = margin + Math.random() * (canvas.height - 2 * margin);
+                    // Randomly position shapes across entire canvas
+                    const startX = scaledMargin + Math.random() * (actualCanvasWidth - 2 * scaledMargin);
+                    const startY = scaledMargin + Math.random() * (actualCanvasHeight - 2 * scaledMargin);
                     const type = Math.floor(Math.random() * 3);
+
                     switch (type) {
-                        case 0:
-                            shape = { type: 'segment', p1: { x: startX, y: startY, color: colors.red }, p2: { x: startX + originalDx, y: startY + originalDy, color: colors.blue }};
+                        case 0: // Same colors
+                            shape = {
+                                type: 'segment',
+                                p1: { x: startX, y: startY, color: colors.red },
+                                p2: { x: startX + originalDx, y: startY + originalDy, color: colors.blue }
+                            };
                             break;
-                        case 1:
+                        case 1: // Different angle
                             const angle = Math.random() * 2 * Math.PI;
-                            shape = { type: 'segment', p1: { x: startX, y: startY, color: colors.red }, p2: { x: startX + Math.cos(angle) * originalLength, y: startY + Math.sin(angle) * originalLength, color: colors.blue }};
+                            shape = {
+                                type: 'segment',
+                                p1: { x: startX, y: startY, color: colors.red },
+                                p2: {
+                                    x: startX + Math.cos(angle) * originalLength,
+                                    y: startY + Math.sin(angle) * originalLength,
+                                    color: colors.blue
+                                }
+                            };
                             break;
-                        case 2:
+                        case 2: // Different length
                             const lengthModifier = (Math.random() > 0.5) ? 1.5 : 0.6;
-                            shape = { type: 'segment', p1: { x: startX, y: startY, color: colors.red }, p2: { x: startX + originalDx * lengthModifier, y: startY + originalDy * lengthModifier, color: colors.blue }};
+                            shape = {
+                                type: 'segment',
+                                p1: { x: startX, y: startY, color: colors.red },
+                                p2: {
+                                    x: startX + originalDx * lengthModifier,
+                                    y: startY + originalDy * lengthModifier,
+                                    color: colors.blue
+                                }
+                            };
                             break;
                     }
                     shape.isCorrect = false;
                     attempts++;
                 } while ((!isShapeInBounds(shape, margin) || isOverlapping(shape, [originalShape, ...generatedShapes])) && attempts < 100);
+
                 if (attempts < 100) generatedShapes.push(shape);
             }
 
             candidateShapes = generatedShapes.sort(() => Math.random() - 0.5);
-            candidateShapes.forEach((shape, index) => { if (shape.isCorrect) correctIndices.add(index); });
+            candidateShapes.forEach((shape, index) => {
+                if (shape.isCorrect) correctIndices.add(index);
+            });
+
             redrawCanvas();
         }
 
@@ -420,24 +566,43 @@
 
             selectedIndices.clear();
             correctIndices.clear();
-            
-            const v1 = { x: margin + 60, y: canvas.height / 2 + (Math.random() - 0.5) * 100, color: colors.red };
-            const leg1Len = 80 + Math.random() * 40;
-            const leg2Len = 80 + Math.random() * 40;
+
+            const margin = 20;
+            const scaledMargin = margin * scaleFactor;
+
+            // Create original triangle with random position
+            const leg1Len = (80 + Math.random() * 40) * scaleFactor;
+            const leg2Len = (80 + Math.random() * 40) * scaleFactor;
+
+            // Random position for original triangle anywhere on canvas
+            const triangleMaxX = actualCanvasWidth - scaledMargin - leg1Len;
+            const triangleMaxY = actualCanvasHeight - scaledMargin - leg2Len;
+
+            const v1 = {
+                x: scaledMargin + Math.random() * (triangleMaxX - scaledMargin),
+                y: scaledMargin + Math.random() * (triangleMaxY - scaledMargin),
+                color: colors.red
+            };
             const v2 = { x: v1.x + leg1Len, y: v1.y, color: colors.blue };
             const v3 = { x: v1.x, y: v1.y + leg2Len, color: colors.green };
             originalShape = { type: 'triangle', vertices: [v1, v2, v3] };
-            
+
             let generatedShapes = [];
             const numCorrect = 3;
-            const numIncorrect = 6;
-            
+            // Ensure minimum 5 shapes even on mobile
+            const minShapes = 5;
+            const desiredIncorrect = Math.max(minShapes - numCorrect, 4);
+            const numIncorrect = Math.max(desiredIncorrect, Math.floor(actualCanvasWidth / 200));
+
+            // Generate correct shapes (point reflection)
             for (let i = 0; i < numCorrect; i++) {
-                let shape; let attempts = 0;
+                let shape;
+                let attempts = 0;
                 do {
+                    // Random center point anywhere on canvas for point reflection
                     const center = {
-                        x: canvas.width * (0.45 + Math.random() * 0.1),
-                        y: canvas.height * (0.5 + (Math.random() - 0.5) * 0.4)
+                        x: scaledMargin * 2 + Math.random() * (actualCanvasWidth - scaledMargin * 4),
+                        y: scaledMargin * 2 + Math.random() * (actualCanvasHeight - scaledMargin * 4)
                     };
                     const newV1 = { x: 2 * center.x - v1.x, y: 2 * center.y - v1.y, color: v1.color };
                     const newV2 = { x: 2 * center.x - v2.x, y: 2 * center.y - v2.y, color: v2.color };
@@ -445,61 +610,82 @@
                     shape = { type: 'triangle', vertices: [newV1, newV2, newV3], isCorrect: true };
                     attempts++;
                 } while ((!isShapeInBounds(shape, margin) || isOverlapping(shape, [originalShape, ...generatedShapes])) && attempts < 100);
+
                 if (attempts < 100) generatedShapes.push(shape);
             }
 
-             for (let i = 0; i < numIncorrect; i++) {
-                let shape; let attempts = 0;
+            // Generate incorrect shapes
+            for (let i = 0; i < numIncorrect; i++) {
+                let shape;
+                let attempts = 0;
                 do {
-                    const startX = canvas.width * 0.5 + Math.random() * (canvas.width * 0.5 - margin - 120);
-                    const startY = margin + Math.random() * (canvas.height - 2 * margin - 120);
-                    const type = Math.floor(Math.random() * 5);
+                    const bounds = getShapeBounds(originalShape);
+                    const shapeWidth = bounds.maxX - bounds.minX;
+                    const shapeHeight = bounds.maxY - bounds.minY;
+                    const availableWidth = actualCanvasWidth - 2 * scaledMargin - shapeWidth;
+                    const availableHeight = actualCanvasHeight - 2 * scaledMargin - shapeHeight;
+
+                    if (availableWidth <= 0 || availableHeight <= 0) {
+                        attempts = 100;
+                        continue;
+                    }
+
+                    // Random position across entire canvas
+                    const startX = scaledMargin + Math.random() * availableWidth;
+                    const startY = scaledMargin + Math.random() * availableHeight;
+
+                    const type = Math.floor(Math.random() * 4);
                     let newV1, newV2, newV3;
-                    const vec12 = {x: v2.x - v1.x, y: v2.y - v1.y};
-                    const vec13 = {x: v3.x - v1.x, y: v3.y - v1.y};
+                    const vec12 = { x: v2.x - v1.x, y: v2.y - v1.y };
+                    const vec13 = { x: v3.x - v1.x, y: v3.y - v1.y };
+
                     switch (type) {
-                        case 0:
+                        case 0: // Translation
                             newV1 = { x: startX, y: startY, color: v1.color };
                             newV2 = { x: startX + vec12.x, y: startY + vec12.y, color: v2.color };
                             newV3 = { x: startX + vec13.x, y: startY + vec13.y, color: v3.color };
-                            shape = { type: 'triangle', vertices: [newV1, newV2, newV3] };
                             break;
-                        case 1:
+                        case 1: // Scaled
                             const scale = (Math.random() > 0.5) ? 1.4 : 0.6;
                             newV1 = { x: startX, y: startY, color: v1.color };
                             newV2 = { x: startX + vec12.x * scale, y: startY + vec12.y * scale, color: v2.color };
                             newV3 = { x: startX + vec13.x * scale, y: startY + vec13.y * scale, color: v3.color };
-                            shape = { type: 'triangle', vertices: [newV1, newV2, newV3] };
                             break;
-                        case 2:
+                        case 2: // Rotated
                             const angle = (Math.PI / 2) * (Math.random() > 0.5 ? 1 : -1);
-                            const cosA = Math.cos(angle); const sinA = Math.sin(angle);
+                            const cosA = Math.cos(angle);
+                            const sinA = Math.sin(angle);
                             newV1 = { x: startX, y: startY, color: v1.color };
-                            newV2 = { x: startX + vec12.x * cosA - vec12.y * sinA, y: startY + vec12.x * sinA + vec12.y * cosA, color: v2.color };
-                            newV3 = { x: startX + vec13.x * cosA - vec13.y * sinA, y: startY + vec13.x * sinA + vec13.y * cosA, color: v3.color };
-                            shape = { type: 'triangle', vertices: [newV1, newV2, newV3] };
+                            newV2 = {
+                                x: startX + vec12.x * cosA - vec12.y * sinA,
+                                y: startY + vec12.x * sinA + vec12.y * cosA,
+                                color: v2.color
+                            };
+                            newV3 = {
+                                x: startX + vec13.x * cosA - vec13.y * sinA,
+                                y: startY + vec13.x * sinA + vec13.y * cosA,
+                                color: v3.color
+                            };
                             break;
-                        case 3:
-                             newV1 = { x: startX, y: startY, color: v1.color };
-                             newV2 = { x: startX + vec12.x, y: startY - vec12.y, color: v2.color };
-                             newV3 = { x: startX + vec13.x, y: startY - vec13.y, color: v3.color };
-                             shape = { type: 'triangle', vertices: [newV1, newV2, newV3] };
-                             break;
-                        case 4:
-                             newV1 = { x: startX, y: startY, color: v1.color };
-                             newV2 = { x: startX + vec12.x, y: startY + vec12.y, color: v2.color };
-                             newV3 = { x: startX + vec13.x + (Math.random() - 0.5) * 120, y: startY + vec13.y + (Math.random() - 0.5) * 120, color: v3.color };
-                             shape = { type: 'triangle', vertices: [newV1, newV2, newV3] };
-                             break;
+                        case 3: // Reflected
+                            newV1 = { x: startX, y: startY, color: v1.color };
+                            newV2 = { x: startX + vec12.x, y: startY - vec12.y, color: v2.color };
+                            newV3 = { x: startX + vec13.x, y: startY - vec13.y, color: v3.color };
+                            break;
                     }
-                    shape.isCorrect = false;
+
+                    shape = { type: 'triangle', vertices: [newV1, newV2, newV3], isCorrect: false };
                     attempts++;
                 } while ((!isShapeInBounds(shape, margin) || isOverlapping(shape, [originalShape, ...generatedShapes])) && attempts < 100);
+
                 if (attempts < 100) generatedShapes.push(shape);
             }
 
             candidateShapes = generatedShapes.sort(() => Math.random() - 0.5);
-            candidateShapes.forEach((shape, index) => { if (shape.isCorrect) correctIndices.add(index); });
+            candidateShapes.forEach((shape, index) => {
+                if (shape.isCorrect) correctIndices.add(index);
+            });
+
             redrawCanvas();
         }
 
@@ -515,48 +701,78 @@
             selectedIndices.clear();
             correctIndices.clear();
 
-            const s = 0.7; // Scale factor to make shapes smaller
-            const v1 = { x: margin + 100, y: canvas.height / 2 + 50, color: colors.red };
-            const v2 = { x: v1.x + 100 * s, y: v1.y - 40 * s, color: colors.blue };
-            const v4 = { x: v1.x - 30 * s, y: v1.y - 60 * s, color: colors.yellow };
-            const v3 = { x: v2.x + (v4.x - v1.x), y: v2.y + (v4.y - v1.y), color: colors.green };
+            const margin = 20;
+            const scaledMargin = margin * scaleFactor;
+
+            // Create original parallelogram with random position
+            const baseWidth = 100 * scaleFactor;
+            const slantX = -30 * scaleFactor;
+            const slantY = -50 * scaleFactor;
+            const baseHeight = 30 * scaleFactor;
+
+            // Calculate bounds for random positioning
+            const paraMaxX = Math.max(baseWidth, Math.abs(slantX)) + baseWidth;
+            const paraMaxY = Math.max(Math.abs(baseHeight), Math.abs(slantY)) + Math.abs(baseHeight);
+
+            const startX = scaledMargin + Math.random() * Math.max(0, actualCanvasWidth - scaledMargin * 2 - paraMaxX);
+            const startY = scaledMargin + paraMaxY / 2 + Math.random() * Math.max(0, actualCanvasHeight - scaledMargin * 2 - paraMaxY);
+
+            const v1 = {
+                x: startX,
+                y: startY,
+                color: colors.red
+            };
+            const v2 = {
+                x: v1.x + baseWidth,
+                y: v1.y - baseHeight,
+                color: colors.blue
+            };
+            const v4 = {
+                x: v1.x + slantX,
+                y: v1.y + slantY,
+                color: colors.yellow
+            };
+            const v3 = {
+                x: v2.x + (v4.x - v1.x),
+                y: v2.y + (v4.y - v1.y),
+                color: colors.green
+            };
             originalShape = { type: 'parallelogram', vertices: [v1, v2, v3, v4] };
 
             let generatedShapes = [];
-            const numCorrect = Math.floor(Math.random() * 2) + 2; // 2 or 3
-            const numIncorrect = Math.floor(Math.random() * 2) + 7; // 7 or 8
+            const numCorrect = 2;
+            // Ensure minimum 5 shapes even on mobile
+            const minShapes = 5;
+            const desiredIncorrect = Math.max(minShapes - numCorrect, 3);
+            const numIncorrect = Math.max(desiredIncorrect, Math.floor(actualCanvasWidth / 200));
 
             const reflectPointOverLine = (point, line) => {
-                const a = line.m; const b = -1; const c = line.c;
+                const a = line.m;
+                const b = -1;
+                const c = line.c;
                 const den = a * a + b * b;
                 if (den === 0) return point;
                 const num = a * point.x + b * point.y + c;
-                return { x: point.x - 2 * a * num / den, y: point.y - 2 * b * num / den, color: point.color };
+                return {
+                    x: point.x - 2 * a * num / den,
+                    y: point.y - 2 * b * num / den,
+                    color: point.color
+                };
             };
-            
-            // --- GUARANTEED CORRECT SHAPE GENERATION ---
+
+            // Generate correct shapes (axial reflection)
             let correctShapesGenerated = 0;
             let totalAttempts = 0;
 
-            while (correctShapesGenerated < numCorrect && totalAttempts < 5000) {
-                let m;
-                const slopeType = Math.random();
-                if (slopeType < 0.7) { // Slanted lines with moderate slope
-                    m = (Math.random() * 4 - 2); // m between -2 and 2
-                    if (Math.abs(m) < 0.3) m = (m >= 0 ? 1 : -1) * 0.3; // Avoid nearly horizontal lines
-                } else { // Steeper lines for variety
-                    m = (Math.random() * 8 - 4); // m between -4 and 4
-                    if (Math.abs(m) < 2) m = (m >= 0 ? 1 : -1) * 2; // Ensure it's reasonably steep
-                }
+            while (correctShapesGenerated < numCorrect && totalAttempts < 500) {
+                const m = (Math.random() * 4 - 2);
+                const c_center = (actualCanvasHeight / 2) - m * (actualCanvasWidth / 2);
+                const c = c_center + (Math.random() - 0.5) * (actualCanvasHeight * 0.5);
 
-                // Generate a y-intercept 'c' so the line passes near the canvas center
-                const c_center = (canvas.height / 2) - m * (canvas.width / 2);
-                const c = c_center + (Math.random() - 0.5) * 350; // Add random offset
-                
                 const line = { m, c };
                 const newVertices = originalShape.vertices.map(v => reflectPointOverLine(v, line));
                 const shape = { type: 'parallelogram', vertices: newVertices, isCorrect: true };
-                
+
                 if (isShapeInBounds(shape, margin) && !isOverlapping(shape, [originalShape, ...generatedShapes])) {
                     generatedShapes.push(shape);
                     correctShapesGenerated++;
@@ -564,51 +780,84 @@
                 totalAttempts++;
             }
 
-
-            // --- INCORRECT SHAPE GENERATION ---
+            // Generate incorrect shapes
             for (let i = 0; i < numIncorrect; i++) {
-                let shape; let attempts = 0;
+                let shape;
+                let attempts = 0;
                 do {
-                    const startX = canvas.width * 0.4 + Math.random() * (canvas.width * 0.6 - margin - 150);
-                    const startY = margin + Math.random() * (canvas.height - 2 * margin - 150);
-                    const type = Math.floor(Math.random() * 5);
+                    const bounds = getShapeBounds(originalShape);
+                    const shapeWidth = bounds.maxX - bounds.minX;
+                    const shapeHeight = bounds.maxY - bounds.minY;
+                    const availableWidth = actualCanvasWidth - 2 * scaledMargin - shapeWidth;
+                    const availableHeight = actualCanvasHeight - 2 * scaledMargin - shapeHeight;
+
+                    if (availableWidth <= 0 || availableHeight <= 0) {
+                        attempts = 100;
+                        continue;
+                    }
+
+                    // Random position across entire canvas
+                    const startX = scaledMargin + Math.random() * availableWidth;
+                    const startY = scaledMargin + Math.random() * availableHeight;
+
+                    const type = Math.floor(Math.random() * 3);
                     let newVertices;
                     const [ov1, ov2, ov3, ov4] = originalShape.vertices;
 
                     switch (type) {
-                        case 0: // Point Reflection (Distractor)
-                            const center = { x: startX + 60, y: startY + 60};
-                            newVertices = originalShape.vertices.map(v => ({ x: 2 * center.x - v.x, y: 2 * center.y - v.y, color: v.color }));
+                        case 0: // Point Reflection
+                            const center = { x: startX + 60 * scaleFactor, y: startY + 60 * scaleFactor };
+                            newVertices = originalShape.vertices.map(v => ({
+                                x: 2 * center.x - v.x,
+                                y: 2 * center.y - v.y,
+                                color: v.color
+                            }));
                             break;
-                        case 1: // Incorrect colors
-                            const line = { m: 1000, c: -1000 * (canvas.width / 2 + (Math.random() - 0.5) * 50) };
-                            newVertices = originalShape.vertices.map(v => reflectPointOverLine(v, line));
-                            [newVertices[1].color, newVertices[3].color] = [newVertices[3].color, newVertices[1].color];
-                            break;
-                        case 2: // Scaled
+                        case 1: // Scaled
                             const scale = 1.5;
-                            const newV1 = { x: startX, y: startY, color: ov1.color };
-                            newVertices = [ newV1,
-                                { x: newV1.x + (ov2.x - ov1.x) * scale, y: newV1.y + (ov2.y - ov1.y) * scale, color: ov2.color },
-                                { x: newV1.x + (ov3.x - ov1.x) * scale, y: newV1.y + (ov3.y - ov1.y) * scale, color: ov3.color },
-                                { x: newV1.x + (ov4.x - ov1.x) * scale, y: newV1.y + (ov4.y - ov1.y) * scale, color: ov4.color } ];
+                            const newV1_s = { x: startX, y: startY, color: ov1.color };
+                            newVertices = [
+                                newV1_s,
+                                {
+                                    x: newV1_s.x + (ov2.x - ov1.x) * scale,
+                                    y: newV1_s.y + (ov2.y - ov1.y) * scale,
+                                    color: ov2.color
+                                },
+                                {
+                                    x: newV1_s.x + (ov3.x - ov1.x) * scale,
+                                    y: newV1_s.y + (ov3.y - ov1.y) * scale,
+                                    color: ov3.color
+                                },
+                                {
+                                    x: newV1_s.x + (ov4.x - ov1.x) * scale,
+                                    y: newV1_s.y + (ov4.y - ov1.y) * scale,
+                                    color: ov4.color
+                                }
+                            ];
                             break;
-                        case 3: // Rectangle
-                            newVertices = [ { x: startX, y: startY, color: ov1.color }, { x: startX + 84, y: startY, color: ov2.color },
-                                { x: startX + 84, y: startY + 56, color: ov3.color }, { x: startX, y: startY + 56, color: ov4.color } ];
-                            break;
-                        case 4: // Translation
-                            newVertices = originalShape.vertices.map(v => ({x: v.x + 250 + Math.random() * 50, y: v.y + (Math.random() - 0.5) * 50, color: v.color}));
+                        case 2: // Translation
+                            const offsetX = actualCanvasWidth * 0.3 + Math.random() * 50 * scaleFactor;
+                            const offsetY = (Math.random() - 0.5) * 50 * scaleFactor;
+                            newVertices = originalShape.vertices.map(v => ({
+                                x: v.x + offsetX,
+                                y: v.y + offsetY,
+                                color: v.color
+                            }));
                             break;
                     }
+
                     shape = { type: 'parallelogram', vertices: newVertices, isCorrect: false };
                     attempts++;
                 } while ((!isShapeInBounds(shape, margin) || isOverlapping(shape, [originalShape, ...generatedShapes])) && attempts < 100);
+
                 if (attempts < 100) generatedShapes.push(shape);
             }
 
             candidateShapes = generatedShapes.sort(() => Math.random() - 0.5);
-            candidateShapes.forEach((shape, index) => { if (shape.isCorrect) correctIndices.add(index); });
+            candidateShapes.forEach((shape, index) => {
+                if (shape.isCorrect) correctIndices.add(index);
+            });
+
             redrawCanvas();
         }
 
@@ -618,6 +867,7 @@
                 feedbackEl.className = 'feedback info';
                 return;
             }
+
             let hasIncorrectSelection = false;
             for (const idx of selectedIndices) {
                 if (!candidateShapes[idx].isCorrect) {
@@ -625,33 +875,50 @@
                     break;
                 }
             }
+
             if (hasIncorrectSelection) {
                 feedbackEl.textContent = 'Olyan alakzatot is kijelöltél, ami nem tükörkép!';
                 feedbackEl.className = 'feedback err';
                 return;
             }
+
             if (selectedIndices.size === correctIndices.size) {
-                 feedbackEl.textContent = 'Gratulálok, az összes lehetőséget megtaláltad!';
-                 feedbackEl.className = 'feedback ok';
+                feedbackEl.textContent = 'Gratulálok, az összes lehetőséget megtaláltad!';
+                feedbackEl.className = 'feedback ok';
             } else {
-                 feedbackEl.textContent = 'Van még olyan alakzat, ami tükörkép!';
-                 feedbackEl.className = 'feedback info';
+                feedbackEl.textContent = 'Van még olyan alakzat, ami tükörkép!';
+                feedbackEl.className = 'feedback info';
             }
         }
-        
+
         function handleCanvasClick(event) {
+            event.preventDefault();
             const rect = canvas.getBoundingClientRect();
-            const clickPoint = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-            
+            const clickPoint = {
+                x: (event.clientX - rect.left) * (actualCanvasWidth / rect.width),
+                y: (event.clientY - rect.top) * (actualCanvasHeight / rect.height)
+            };
+
             candidateShapes.forEach((shape, i) => {
                 let wasClicked = false;
+                const threshold = 15 * scaleFactor;
+
                 if (shape.type === 'segment') {
                     const lenSq = distSq(shape.p1, shape.p2);
                     if (lenSq === 0) return;
-                    let t = ((clickPoint.x - shape.p1.x) * (shape.p2.x - shape.p1.x) + (clickPoint.y - shape.p1.y) * (shape.p2.y - shape.p1.y)) / lenSq;
+
+                    let t = ((clickPoint.x - shape.p1.x) * (shape.p2.x - shape.p1.x) +
+                        (clickPoint.y - shape.p1.y) * (shape.p2.y - shape.p1.y)) / lenSq;
                     t = Math.max(0, Math.min(1, t));
-                    const closestPoint = { x: shape.p1.x + t * (shape.p2.x - shape.p1.x), y: shape.p1.y + t * (shape.p2.y - shape.p1.y) };
-                    if (distSq(clickPoint, closestPoint) < 15*15) wasClicked = true;
+
+                    const closestPoint = {
+                        x: shape.p1.x + t * (shape.p2.x - shape.p1.x),
+                        y: shape.p1.y + t * (shape.p2.y - shape.p1.y)
+                    };
+
+                    if (distSq(clickPoint, closestPoint) < threshold * threshold) {
+                        wasClicked = true;
+                    }
                 } else if (shape.vertices && shape.vertices.length >= 3) {
                     const vertices = shape.vertices;
                     let signs = [];
@@ -667,27 +934,107 @@
                 }
 
                 if (wasClicked) {
-                    if (selectedIndices.has(i)) selectedIndices.delete(i);
-                    else selectedIndices.add(i);
+                    if (selectedIndices.has(i)) {
+                        selectedIndices.delete(i);
+                    } else {
+                        selectedIndices.add(i);
+                    }
                 }
             });
+
             redrawCanvas();
         }
 
-        task1Btn.addEventListener('click', setupTask1);
-        task2Btn.addEventListener('click', setupTask2);
-        task3Btn.addEventListener('click', setupTask3);
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth;
+            const aspectRatio = 500 / 940;
 
-        checkBtn.addEventListener('click', checkAnswer);
-        retryBtn.addEventListener('click', () => {
+            // Set display size
+            const displayWidth = Math.min(containerWidth, 940);
+            const displayHeight = displayWidth * aspectRatio;
+
+            // Get device pixel ratio for high DPI displays
+            const dpr = window.devicePixelRatio || 1;
+
+            // Set actual canvas size accounting for device pixel ratio
+            actualCanvasWidth = displayWidth * dpr;
+            actualCanvasHeight = displayHeight * dpr;
+
+            canvas.width = actualCanvasWidth;
+            canvas.height = actualCanvasHeight;
+
+            // Scale canvas back down using CSS
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+
+            // Scale the context to ensure correct drawing operations
+            ctx.scale(dpr, dpr);
+            actualCanvasWidth = displayWidth;
+            actualCanvasHeight = displayHeight;
+
+            // Calculate scale factor based on original 940x500 dimensions
+            scaleFactor = displayWidth / 940;
+        }
+
+        function setupCurrentTask() {
+            resizeCanvas();
             if (currentTask === 1) setupTask1();
             else if (currentTask === 2) setupTask2();
             else if (currentTask === 3) setupTask3();
-        });
-        canvas.addEventListener('click', handleCanvasClick);
+        }
 
-        setupTask1();
-    };
+        // Event listeners
+        task1Btn.addEventListener('click', () => {
+            currentTask = 1;
+            setupCurrentTask();
+        });
+
+        task2Btn.addEventListener('click', () => {
+            currentTask = 2;
+            setupCurrentTask();
+        });
+
+        task3Btn.addEventListener('click', () => {
+            currentTask = 3;
+            setupCurrentTask();
+        });
+
+        checkBtn.addEventListener('click', checkAnswer);
+        retryBtn.addEventListener('click', setupCurrentTask);
+
+        canvas.addEventListener('click', handleCanvasClick);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const mockEvent = {
+                    preventDefault: () => { },
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                };
+                handleCanvasClick(mockEvent);
+            }
+        });
+
+        // Debounced resize handler
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(setupCurrentTask, 150);
+        });
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            setupCurrentTask();
+        });
+
+        // Also setup if everything is already loaded
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setupCurrentTask();
+        }
     </script>
 </body>
+
 </html>
