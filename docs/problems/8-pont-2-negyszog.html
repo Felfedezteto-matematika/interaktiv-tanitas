@@ -156,21 +156,21 @@
         
         <ul class="goal-list" id="goal-list">
             <!-- Feladatok listája -->
-            <li id="task-1" class="goal-item current-goal">
+            <li id="task-1" class="goal-item future-goal">
                 <span class="goal-icon">1</span>
-                <span>Két paralelogrammát kell rajzolnod</span>
+                <span>Egy négyzetet és egy szimmetrikus trapézt kell rajzolnod</span>
             </li>
             <li id="task-2" class="goal-item future-goal">
                 <span class="goal-icon">2</span>
-                <span>Egy négyzetet és egy szimmetrikus trapézt kell rajzolnod</span>
+                <span>Két derékszögű trapézt kell rajzolnod</span>
             </li>
             <li id="task-3" class="goal-item future-goal">
                 <span class="goal-icon">3</span>
                 <span>Egy négyzetet és egy paralelogrammát kell rajzolnod</span>
             </li>
-            <li id="task-4" class="goal-item future-goal">
+            <li id="task-4" class="goal-item current-goal">
                 <span class="goal-icon">4</span>
-                <span>Két derékszögű trapézt kell rajzolnod</span>
+                <span>Két paralelogrammát kell rajzolnod</span>
             </li>
         </ul>
 
@@ -325,21 +325,11 @@
         };
 
 
-        // --- Konvex Burok Algoritmus (Monotone Chain) ---
-
-        // Segédfüggvény a keresztszorzat (cross product) kiszámításához
-        // > 0 ha p, q, r kanyar balra (counter-clockwise)
-        // = 0 ha p, q, r egy vonalon vannak (collinear)
-        // < 0 ha p, q, r kanyar jobbra (clockwise)
         const crossProduct = (p, q, r) => {
             // (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - r.x)
             return (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
         };
 
-        /**
-         * Monotone Chain konvex burok algoritmus.
-         * Forrás: https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain
-         */
         const getConvexHull = (points) => {
             const n = points.length;
             if (n < 3) return [...points];
@@ -374,9 +364,6 @@
             // lower.length - 1 és upper.length - 1-ig, hogy ne ismétlődjenek a szélső pontok
             return lower.slice(0, lower.length - 1).concat(upper.slice(0, upper.length - 1));
         };
-
-
-        // --- Permutáció Ellenőrző Logika ---
 
         /**
          * Segédfüggvény a 4 pont összes lehetséges sorrendjének (permutációjának) előállításához.
@@ -575,19 +562,19 @@
         // --- Feladatkezelés és Ellenőrzés ---
 
         const stageConfigs = [
-            { // Stage 1: Két paralelogramma
-                message: 'Válassz úgy 4 pontot, hogy mindkét négyszög paralelogramma legyen!',
-                shape1Checker: isParallelogram,
-                shape2Checker: isParallelogram,
-                successMsg: 'Sikeresen találtál két paralelogrammát!',
-                title: 'Két paralelogramma'
-            },
-            { // Stage 2: Négyzet és szimmetrikus trapéz
+            { // Stage 1: Négyzet és szimmetrikus trapéz
                 message: 'Válassz úgy 4 pontot, hogy az egyik négyszög négyzet, a másik szimmetrikus trapéz legyen!',
                 shape1Checker: isSquare,
                 shape2Checker: isSymmetricTrapezoid,
                 successMsg: 'Sikeresen találtál egy négyzetet és egy szimmetrikus trapézt!',
                 title: 'Négyzet és szimmetrikus trapéz'
+            },
+            { // Stage 2: Két derékszögű trapéz
+                message: 'Válassz úgy 4 pontot, hogy mindkét négyszög  derékszögű trapéz legyen!',
+                shape1Checker: isRightAngledTrapezoid,
+                shape2Checker: isRightAngledTrapezoid,
+                successMsg: 'Sikeresen találtál két derékszögű trapézt!',
+                title: 'Két derékszögű trapéz'
             },
             { // Stage 3: Négyzet és paralelogramma
                 message: 'Válassz úgy 4 pontot, hogy az egyik négyszög négyzet, a másik paralelogramma legyen!',
@@ -596,12 +583,12 @@
                 successMsg: 'Sikeresen találtál egy négyzetet és egy paralelogrammát!',
                 title: 'Négyzet és paralelogramma'
             },
-            { // Stage 4: Két derékszögű trapéz
-                message: 'Válassz úgy 4 pontot, hogy mindkét négyszög  derékszögű trapéz legyen!',
-                shape1Checker: isRightAngledTrapezoid,
-                shape2Checker: isRightAngledTrapezoid,
-                successMsg: 'Sikeresen találtál két derékszögű trapézt!',
-                title: 'Két derékszögű trapéz'
+            { // Stage 4: Két paralelogramma
+                message: 'Válassz úgy 4 pontot, hogy mindkét négyszög paralelogramma legyen!',
+                shape1Checker: isParallelogram,
+                shape2Checker: isParallelogram,
+                successMsg: 'Sikeresen találtál két paralelogrammát!',
+                title: 'Két paralelogramma'
             },
         ];
 
