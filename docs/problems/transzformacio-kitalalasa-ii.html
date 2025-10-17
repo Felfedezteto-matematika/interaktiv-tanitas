@@ -176,17 +176,10 @@
 
         // Define individual transformation functions
         const transformation1 = (x, y) => ({ x: x, y: -y });
-        const transformation2 = (x, y) => ({ x: y, y: x });
-        const transformation3 = (x, y) => ({ x: - y + 1, y: - x + 1 });
+        const transformation2 = (x, y) => ({ x: x, y: 1 });
+        const transformation3 = (x, y) => ({ x: 2*x, y: 2*y });
         const transformation4 = (x, y) => ({ x: -y, y: x });
-        const transformation5 = (x, y) => {
-            const angleRad = (120 * Math.PI) / 180;
-            const cos = Math.cos(angleRad);
-            const sin = Math.sin(angleRad);
-            const newX = x * cos - y * sin;
-            const newY = x * sin + y * cos;
-            return { x: newX, y: newY };
-        };
+        const transformation5 = (x, y) => ({ x: -y, y: x });
         const transformation6 = (x, y) => ({ x: y - 1, y: x });
 
         // Map task indices to the corresponding functions
