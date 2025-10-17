@@ -161,6 +161,7 @@
             width: 100%;
             height: 400px;
             cursor: crosshair;
+            touch-action: none; /* Prevent default touch behaviors like scrolling */
         }
 
         .status {
@@ -399,23 +400,29 @@
                 text: '5) Helyezz el a síkon egy tükörtengelyt úgy, hogy a metszéspont és az egyik egyenes képe is önmaga legyen, de a másik egyenesé ne.',
                 lines: [interL1, interL2],
                 check(axis) {
-                    // Metszéspontnak a tengelyen kell lennie
-                    const POINT_TOL = 5; // még nagyobb tűrés a metszéspontra - nehéz pontosan rajzolni
-                    const distToIntersection = distancePointToLine(interPoint.x, interPoint.y, axis);
-                    const pass = distToIntersection <= POINT_TOL;
+                    const POINT_TOL = 10;
+                    const PERP_TOL = 8;
+                    const aa = lineAngleDeg(axis);
                     
-                    // Tengely merőleges pontosan az egyik egyenesre
+                    // A tengelynek át kell mennie a metszésponton
+                    const distToIntersection = distancePointToLine(interPoint.x, interPoint.y, axis);
+                    const passesThroughIntersection = distToIntersection <= POINT_TOL;
+                    if (!passesThroughIntersection) return false;
+
                     const la1 = lineAngleDeg(interL1);
                     const la2 = lineAngleDeg(interL2);
-                    const aa = lineAngleDeg(axis);
-                    const PERP_TOL = 8; // merőlegesség-tűrés (fok) - nagyobb tűrés a könnyebb használatért
-                    
-                    const perp1 = areLinesPerpendicular(la1, aa, PERP_TOL);
-                    const perp2 = areLinesPerpendicular(la2, aa, PERP_TOL);
-                    
-                    // Mindkét kritérium teljesül: átmegy a metszésponton ÉS pontosan az egyikre merőleges
-                    // Az XOR logika biztosítja, hogy pontosan az egyik egyenesre legyen merőleges
-                    return pass && (perp1 !== perp2);
+
+                    // 1. eset: A tengely merőleges az egyik egyenesre (de a másikra nem)
+                    const isPerpToL1 = areLinesPerpendicular(la1, aa, PERP_TOL);
+                    const isPerpToL2 = areLinesPerpendicular(la2, aa, PERP_TOL);
+                    const perpendicularSolution = (isPerpToL1 !== isPerpToL2); // XOR
+
+                    // 2. eset: A tengely azonos az egyik egyenessel
+                    const isSameAsL1 = areLinesSame(la1, aa, ANG_TOL);
+                    const isSameAsL2 = areLinesSame(la2, aa, ANG_TOL);
+                    const identitySolution = isSameAsL1 || isSameAsL2;
+
+                    return perpendicularSolution || identitySolution;
                 },
                 impossible: false
             },
@@ -461,29 +468,54 @@
         // ----- Interakció: tengely rajzolása -----
         let axisPoints = []; // max 2 pont
         let isDragging = false;
-        
-        canvas.addEventListener('mousedown', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+
+        function handleDragStart(x, y) {
             axisPoints = [{x, y}];
             isDragging = true;
             statusMsg('');
             draw();
+        }
+
+        function handleDragMove(x, y) {
+            if (!isDragging || axisPoints.length === 0) return;
+            axisPoints[1] = {x, y};
+            draw();
+        }
+
+        function handleDragEnd() {
+            isDragging = false;
+        }
+
+        // Mouse Events
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            handleDragStart(e.clientX - rect.left, e.clientY - rect.top);
         });
 
         document.addEventListener('mousemove', (e) => {
-            if (!isDragging || axisPoints.length === 0) return;
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            axisPoints[1] = {x, y};
-            draw();
+            handleDragMove(e.clientX - rect.left, e.clientY - rect.top);
         });
 
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
+        document.addEventListener('mouseup', handleDragEnd);
+
+        // Touch Events
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            handleDragStart(touch.clientX - rect.left, touch.clientY - rect.top);
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            handleDragMove(touch.clientX - rect.left, touch.clientY - rect.top);
+        }, { passive: false });
+
+        document.addEventListener('touchend', handleDragEnd);
 
         canvas.addEventListener('dblclick', () => {
             axisPoints = [];
