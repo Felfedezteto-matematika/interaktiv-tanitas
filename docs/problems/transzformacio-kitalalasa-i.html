@@ -176,9 +176,8 @@
         // Define individual transformation functions
         const transformation1 = (x, y) => ({ x: x + 1, y: y });
         const transformation2 = (x, y) => ({ x: x - 2, y: y - 3 });
-        const transformation3 = (x, y) => ({ x: x, y: 1 });
-        const transformation4 = (x, y) => ({ x: -x, y: -y });
-        const transformation5 = (x, y) => {
+        const transformation3 = (x, y) => ({ x: -x, y: -y });
+        const transformation4 = (x, y) => {
             if (x >= 0 && y >= 0) { // Quadrant I
                 return { x: x + 1, y: y + 1 };
             } else if (x < 0 && y >= 0) { // Quadrant II
@@ -189,6 +188,7 @@
                 return { x: x + 1, y: y - 1 };
             } 
         };
+        const transformation5 = (x, y) => ({ x: 1 - x, y: 1 - y });
 
         // Map task indices to the corresponding functions
         const transformations = [
