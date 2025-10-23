@@ -369,10 +369,29 @@
             const clickX = event.clientX - rect.left;
             const clickY = event.clientY - rect.top;
 
-            // Convert screen coordinates to mathematical coordinates
+            // Convert screen coordinates to raw mathematical coordinates
+            const rawX = (clickX - originX) / scale;
+            const rawY = -(clickY - originY) / scale;
+
+            // *** ÚJ: Rácshoz igazítási logika ***
+            const snapThreshold = 0.08; // Ekkora távolságon belül igazít (egységben)
+
+            // Legközelebbi egész számok keresése
+            const roundedX = Math.round(rawX);
+            const roundedY = Math.round(rawY);
+
+            // Távolság a legközelebbi egésztől
+            const diffX = Math.abs(rawX - roundedX);
+            const diffY = Math.abs(rawY - roundedY);
+
+            // Igazítás, ha a távolság a küszöbértéken belül van
+            const finalX = (diffX < snapThreshold) ? roundedX : rawX;
+            const finalY = (diffY < snapThreshold) ? roundedY : rawY;
+
+            // Az (potenciálisan igazított) koordináták használata
             const newOriginalPoint = {
-                x: (clickX - originX) / scale,
-                y: -(clickY - originY) / scale
+                x: finalX,
+                y: finalY
             };
             
             // Add previous points to history before updating
