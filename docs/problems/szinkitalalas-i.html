@@ -70,7 +70,7 @@
     <div id="game-container" class="w-full max-w-4xl bg-white p-6 sm:p-8 rounded-xl shadow-2xl transition-all relative">
         <h1 class="text-3xl font-extrabold text-gray-800 mb-2 text-center">Színkitalálás I.</h1>
         <p class="text-center text-gray-600 mb-6 text-sm">
-            A lenti ábrán a fekete pöttyök szimmetria középpontok. Néhány mező színét megadtuk, ezek alapján kell kitalálnod 5 véletlenszerű mező színét. Cél, hogy minél többször helyesen tippelj, minél kevesebb idő alatt.
+            A lenti ábrán a fekete pöttyök szimmetria középpontok. Néhány mező színét megadtuk, ezek alapján kell kitalálnod 5 mező színét. Cél, hogy minél többször helyesen tippelj, minél kevesebb idő alatt.
         </p>
 
         <div class="flex justify-center items-center mb-6">
@@ -107,12 +107,6 @@
         // === SZERKESZTHETŐ KONFIGURÁCIÓ ===
         
         // 1. A JÁTÉK ALAPMINTÁJA (2x6 egység = 12 típus)
-        // Ezt a 2x6-os tömböt ismétli a teljes 12x12-es rács.
-        // A mintázat 4 Piros (0), 4 Zöld (1) és 4 Kék (2) színt tartalmaz, ami garantálja a színegyensúlyt.
-/*        const EDITABLE_BASE_UNIT = [
-            [0, 1, 1, 0, 2, 1], // R, G, B, R, G, B (Össz: 2R, 2G, 2B)
-            [2, 0, 2, 1, 0, 1]  // B, G, R, B, G, R (Össz: 2R, 2G, 2B)
-        ];*/
         const COLORS = [
             '#ef4444', // C0: Piros (Red)
             '#10b981', // C1: Zöld (Green)
@@ -120,8 +114,8 @@
         ];
 
         const EDITABLE_BASE_UNIT = [
-            [0, 1, 2, 3,  4,  5], // R, G, B, R, G, B (Össz: 2R, 2G, 2B)
-            [6, 7, 8, 9, 10, 11]  // B, G, R, B, G, R (Össz: 2R, 2G, 2B)
+            [0, 1, 2, 3,  4,  5], 
+            [6, 7, 8, 9, 10, 11] 
         ];
         const COLOR_INDEX = [
             0, 1, 1, 0, 2, 2,
@@ -129,10 +123,12 @@
         ];
         
         // Globális változók és konstansok
-        const GRID_SIZE = 12; // 12x12 rács (mindkét dimenzióban)
-        const UNIT_COLS = 3; // A vizuális pöttyök 3 oszloponként jelennek meg (2x3 blokk)
-        const UNIT_ROWS = 2;  // 2 sor az alapegységben (a transzlációs egység magassága)
-        const TR_UNIT_COLS = 2 * UNIT_COLS;  // 6 oszlop az alapegységben (a transzlációs egység szélessége)
+        const UNIT_COLS = EDITABLE_BASE_UNIT[0].length / 2; // A vizuális pöttyök 3 oszloponként jelennek meg (2x3 blokk)
+        const UNIT_ROWS = EDITABLE_BASE_UNIT.length;  // 2 sor az alapegységben (a transzlációs egység magassága)
+        const NUM_OF_COL_REPEAT = 4;
+        const NUM_OF_ROW_REPEAT = 6;
+        const GRID_COL_SIZE = NUM_OF_COL_REPEAT * UNIT_COLS; // 12x12 rács (mindkét dimenzióban)
+        const GRID_ROW_SIZE = NUM_OF_ROW_REPEAT * UNIT_ROWS; // 12x12 rács (mindkét dimenzióban)
         const GUESS_GOAL = 5; // Cél: 5 négyzet megtippelése
 
         let gridData = [];
@@ -144,6 +140,9 @@
         let startTime; // Kezdő időpont
         let isGameRunning = false;
         let BASE_UNIT = []; // A 2x6-os alapegység
+
+        // === ÚJ VÁLTOZÓK A NEHÉZSÉGI SZINTEKHEZ ===
+        let symmetryCenters = []; // A pöttyök (szimmetriaközéppontok) listája
 
         // DOM elemek
         const gameContainer = document.getElementById('game-container');
@@ -157,15 +156,23 @@
         const restartButton = document.getElementById('restart-button');
         
         /**
+         * Két koordináta négyzetes távolságát számolja.
+         * (Gyorsabb, mint a gyökvonás, és összehasonlításra tökéletes)
+         */
+        function distanceSq(r1, c1, r2, c2) {
+            return Math.pow(r2 - r1, 2) + Math.pow(c2 - c1, 2);
+        }
+
+        /**
          * Létrehozza a teljes 12x12-es rácsmintát az EDITABLE_BASE_UNIT ismétlésével.
          */
         function initializeGridData() {
             // BASE_UNIT beállítása a szerkeszthető konstansból
             BASE_UNIT = EDITABLE_BASE_UNIT; 
             gridData = [];
-            for (let r = 0; r < GRID_SIZE; r++) {
+            for (let r = 0; r < GRID_ROW_SIZE; r++) {
                 gridData[r] = [];
-                for (let c = 0; c < GRID_SIZE; c++) {
+                for (let c = 0; c < GRID_COL_SIZE; c++) {
                     const unitC = c % (2 * UNIT_COLS);
                     const unitR = r % (2 * UNIT_ROWS);
                     if (unitR < UNIT_ROWS) {
@@ -182,15 +189,15 @@
          */
         function renderGrid() {
             gridContainer.innerHTML = '';
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
+            for (let r = 0; r < GRID_ROW_SIZE; r++) {
+                for (let c = 0; c < GRID_COL_SIZE; c++) {
                     const cell = document.createElement('div');
                     
                     let classNames = 'grid-cell unknown-cell rounded-sm';
                     
                     // Szimmetria pötty jelölése (a 2x3-as blokkok találkozásánál)
                     // UNIT_ROWS = 2, DOT_UNIT_COLS = 3
-                    if ((r + 1) % UNIT_ROWS === 0 && (c + 1) % UNIT_COLS === 0 && r !== GRID_SIZE - 1 && c !== GRID_SIZE - 1) {
+                    if ((r + 1) % UNIT_ROWS === 0 && (c + 1) % UNIT_COLS === 0 && r !== GRID_ROW_SIZE - 1 && c !== GRID_COL_SIZE - 1) {
                         classNames += ' center-marker';
                     }
 
@@ -210,8 +217,8 @@
             // Ellenőrizzük, hogy vége van-e a játéknak (még ha isGameRunning is true, ha elérte a célt, vége van)
             const gameEnded = !isGameRunning && guessesCompleted >= GUESS_GOAL; 
             
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
+            for (let r = 0; r < GRID_ROW_SIZE; r++) {
+                for (let c = 0; c < GRID_COL_SIZE; c++) {
                     const cell = document.getElementById(`cell-${r}-${c}`);
                     const cellKey = `${r},${c}`;
                     
@@ -255,30 +262,95 @@
             hideColorPicker();
         }
 
-        /**
-         * Random kitalálandó cellát választ, ami még ismeretlen.
-         */
         function selectNewTarget() {
-            let unknownCells = [];
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const cellKey = `${r},${c}`;
-                    if (!knownCells.has(cellKey)) {
-                        unknownCells.push({ r, c });
+            const potentialTargets = new Map();
+            const allKnownCells = Array.from(knownCells).map(key => {
+                const [r, c] = key.split(',').map(Number);
+                return { r, c };
+            });
+
+            // A rácsegység átlójának négyzete (UNIT_COLS x UNIT_ROWS négyzet átlója)
+            const unitDiagonalSq = Math.pow(UNIT_COLS, 2) + Math.pow(UNIT_ROWS, 2);
+
+            // 1. Végigpásztázzuk az összes ismert cellát
+            for (const knownCell of allKnownCells) {
+                
+                // 2. NEHÉZSÉGI SZINT ALAPJÁN választunk szimmetriaközéppontot
+                if (guessesCompleted < 3) {
+                    // === 1-3. TIPP: LEGKÖZELEBBI KÖZÉPPONT ===
+                    let nearestCenter = null;
+                    let minDistanceSq = Infinity;
+
+                    for (const center of symmetryCenters) {
+                        const distSq = distanceSq(knownCell.r, knownCell.c, center.r, center.c);
+                        
+                        if (distSq < minDistanceSq) {
+                            minDistanceSq = distSq;
+                            nearestCenter = center;
+                        }
+                    }
+
+                    if (nearestCenter) {
+                        const targetR = 2 * nearestCenter.r + 1 - knownCell.r;
+                        const targetC = 2 * nearestCenter.c + 1 - knownCell.c;
+                        const targetKey = `${targetR},${targetC}`;
+
+                        if (targetR >= 0 && targetR < GRID_ROW_SIZE && targetC >= 0 && targetC < GRID_COL_SIZE &&
+                            !knownCells.has(targetKey)) {
+                            potentialTargets.set(targetKey, { r: targetR, c: targetC });
+                        }
+                    }
+                } else {
+                    // === 4-5. TIPP: MESSZI KÖZÉPPONT ===
+                    // Végigmegyünk az összes középponton
+                    for (const center of symmetryCenters) {
+                        const distSq = distanceSq(knownCell.r, knownCell.c, center.r, center.c);
+                        
+                        // Csak a "messzi" középpontokat nézzük (távolabb, mint a rácsegység átlója)
+                        if (distSq > unitDiagonalSq) {
+                            const targetR = 2 * center.r + 1 - knownCell.r;
+                            const targetC = 2 * center.c + 1 - knownCell.c;
+                            const targetKey = `${targetR},${targetC}`;
+
+                            if (targetR >= 0 && targetR < GRID_ROW_SIZE && targetC >= 0 && targetC < GRID_COL_SIZE &&
+                                !knownCells.has(targetKey)) {
+                                potentialTargets.set(targetKey, { r: targetR, c: targetC });
+                            }
+                        }
                     }
                 }
             }
 
-            if (unknownCells.length === 0) {
-                // Ha minden ki van színezve, befejezzük a játékot (elméleti eset)
-                return endGame(); 
+            let targetPool = Array.from(potentialTargets.values());
+
+            // 3. Fallback: Ha nincs megfelelő célpont, bármilyen ismeretlen cellát választunk
+            if (targetPool.length === 0) {
+                let allUnknown = [];
+                for (let r = 0; r < GRID_ROW_SIZE; r++) {
+                    for (let c = 0; c < GRID_COL_SIZE; c++) {
+                        if (!knownCells.has(`${r},${c}`)) {
+                            allUnknown.push({ r, c });
+                        }
+                    }
+                }
+                targetPool = allUnknown;
             }
 
-            const randomIndex = Math.floor(Math.random() * unknownCells.length);
-            targetCell = unknownCells[randomIndex];
+            // 4. Végső ellenőrzés: Ha már minden ismert
+            if (targetPool.length === 0) {
+                if (isGameRunning) {
+                    endGame();
+                }
+                return;
+            }
+
+            // 5. Választás a pool-ból
+            const randomIndex = Math.floor(Math.random() * targetPool.length);
+            targetCell = targetPool[randomIndex];
+            
+            // Frissítjük a kijelzőt
             updateGridDisplay();
-        }
-        
+        }        
         /**
          * Megjeleníti a színválasztó modalt a célcella felett.
          * @param {number} r - Sor index.
@@ -353,7 +425,7 @@
             if (guessesCompleted >= GUESS_GOAL) {
                 endGame();
             } else {
-                selectNewTarget(); // Új cellát választunk
+                selectNewTarget(); // Új cellát választunk (a nehézségi logika alapján)
             }
         }
 
@@ -379,7 +451,7 @@
 
             const feedbackEl = document.createElement('div');
             feedbackEl.textContent = feedbackText;
-            feedbackEl.className = `absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl font-extrabold ${feedbackColor} opacity-0 pointer-events-none transition-all duration-500 ease-out z-50`;
+            feedbackEl.className = `absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl font-extrabold ${feedbackColor} opacity-0 pointer-events-none transition-all duration-1500 ease-out z-150`;
             
             gameContainer.appendChild(feedbackEl); // A gameContainer relatív
 
@@ -433,6 +505,20 @@
             initialRevealedCells.clear(); // A kezdeti cellák listájának törlése
             targetCell = null;
             
+            // === ÚJ ===
+            // Szimmetriaközéppontok (pöttyök) listájának összegyűjtése
+            // A pötty a (pr, pc) cella jobb alsó sarkában van.
+            symmetryCenters = [];
+            for (let pr = 0; pr < GRID_ROW_SIZE - 1; pr++) {
+                for (let pc = 0; pc < GRID_COL_SIZE - 1; pc++) {
+                    // A feltétel (r+1)%UNIT_ROWS === 0 && (c+1)%UNIT_COLS === 0
+                    if ((pr + 1) % UNIT_ROWS === 0 && (pc + 1) % UNIT_COLS === 0) {
+                        symmetryCenters.push({ r: pr, c: pc }); 
+                    }
+                }
+            }
+            // ============
+            
             // Időmérés indítása
             startTime = new Date(); 
             
@@ -442,16 +528,15 @@
             initializeGridData();
             renderGrid();
             
-            const REQUIRED_REVEALED_COUNT = 12;
-            const TOTAL_TYPES = UNIT_ROWS * TR_UNIT_COLS; // 12 egyedi típus
+            const TOTAL_TYPES = 2 * UNIT_ROWS * UNIT_COLS; // 12 egyedi típus
             
             let foundRevealedCells = [];
             // Tömb, ami az összes (r, c) koordinátát tárolja típusonként (0-tól 11-ig)
             const typeCells = new Array(TOTAL_TYPES).fill(0).map(() => []); 
 
             // 2a. Csoportosítjuk az összes 144 cellát a 12 típus (unit pozíció) alapján
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
+            for (let r = 0; r < GRID_ROW_SIZE; r++) {
+                for (let c = 0; c < GRID_COL_SIZE; c++) {
                     const typeIndex = gridData[r][c];
                     typeCells[typeIndex].push({ r, c });
                 }
@@ -474,6 +559,7 @@
 
 
             // 3. Új célcella kiválasztása (az első szabad cella)
+            // Ez már a nehézségi logika alapján fog választani (elsőre "könnyűt")
             selectNewTarget();
 
             // 4. Eseménykezelők beállítása
