@@ -577,6 +577,12 @@
                 startGame();
             };
 
+            // ÚJ: Modal bezárása (X gomb)
+            const closeModalButton = document.getElementById('close-modal-button');
+            closeModalButton.onclick = () => {
+                messageModal.classList.add('hidden');
+            };
+
             // Rácson belüli kattintás
             gridContainer.onclick = (event) => {
                 if (!isGameRunning) return;
