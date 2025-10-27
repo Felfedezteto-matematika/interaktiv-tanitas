@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="hu">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tükörtengely kereső</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --fg: #1a1a1a;
+            --card-bg: #f9fafb;
+            --border: #e0e0e0;
+            --green: #22c55e;
+            --green-dark: #16a34a;
+            --blue: #3b82f6;
+            --blue-light: #a5b4fc; 
+            --red: #ef4444;
+            --red-light: #fca5a5; 
+            --text-muted: #757575;
+            --shadow: 0 2px 4px rgba(0,0,0,0.05);
+            --transition: all 0.2s ease-in-out;
+            --yellow: #facc15;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            transition: background var(--transition), color var(--transition);
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2rem;
+            margin: 0 0 4px 0;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            transition: background var(--transition), box-shadow var(--transition), border-color var(--transition);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        button:hover {
+            border-color: var(--text-muted);
+            background-color: #f5f5f5;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #f5f5f5;
+        }
+        
+        button.primary:disabled {
+             background: var(--green);
+             border-color: var(--green);
+             opacity: 0.6;
+        }
+
+        button.primary {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+
+        button.primary:hover {
+            background: var(--green-dark);
+            border-color: var(--green-dark);
+        }
+
+        button.success {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+        
+        button.success:hover {
+            background: var(--green-dark);
+            border-color: var(--green-dark);
+        }
+
+        .task-toggle {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+
+        .task-toggle button {
+            padding: 6px 12px;
+        }
+
+        .task-toggle button.active {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+        
+        .task-toggle button.active:hover {
+            background: var(--green-dark);
+        }
+        
+        .task-toggle button.solved {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+        }
+        
+        .task-toggle button.solved:hover {
+            background: var(--green-dark);
+            border-color: var(--green-dark);
+        }
+
+        .canvas-wrap {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: #fff;
+            transition: background var(--transition);
+        }
+        
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+            cursor: crosshair;
+            touch-action: none; /* Prevent default touch behaviors like scrolling */
+        }
+
+        .status {
+            margin-top: 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .status.ok { color: var(--green-dark); }
+        .status.err { color: var(--red); }
+        
+        .task-text {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        
+        .end-message {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tükörtengely kereső</h1>
+        <div class="subtitle">Húzd be a tükörtengelyt a vásznon, majd kattints az Ellenőrzés gombra.</div>
+
+        <div class="card">
+            <div id="taskContainer">
+                <div id="taskText" class="task-text"></div>
+                <div class="canvas-wrap">
+                    <canvas id="canvas" width="940" height="400"></canvas>
+                </div>
+                <div class="controls">
+                    <button id="checkBtn" class="primary">Ellenőrzés</button>
+                    <button id="impossibleBtn">Lehetetlen</button>
+                    <button id="prevBtn">&larr; Előző</button>
+                    <button id="nextBtn">Következő &rarr;</button>
+                    <div class="task-toggle" id="taskToggle"></div>
+                </div>
+                <div id="status" class="status"></div>
+            </div>
+            <div id="endMessage" style="display: none;" class="end-message">
+                <h2 style="margin-top: 0;">Gratulálunk! Az összes feladatot sikeresen megoldottad!</h2>
+                <button id="resetBtn">Újra játszom!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ----- Geometria segédfüggvények -----
+        const DEG = Math.PI / 180;
+        const toDeg = (rad) => rad / DEG;
+        const mod180 = (deg) => ((deg % 180) + 180) % 180;
+        const mod360 = (deg) => ((deg % 360) + 360) % 360;
+
+        function lerp(a, b, t) {
+            return a + (b - a) * t;
+        }
+
+        function lerpPoint(p1, p2, t) {
+            return {
+                x: lerp(p1.x, p2.x, t),
+                y: lerp(p1.y, p2.y, t)
+            };
+        }
+
+        function distancePointToLine(px, py, line) {
+            const x0 = px, y0 = py;
+            const x1 = line.p.x, y1 = line.p.y;
+            const vx = line.dir.x, vy = line.dir.y;
+            const num = Math.abs(vy * x0 - vx * y0 - (x1 * vy - y1 * vx));
+            const den = Math.hypot(vx, vy);
+            return num / den;
+        }
+
+        function lineAngleDeg(line) {
+            return mod180(toDeg(Math.atan2(line.dir.y, line.dir.x)));
+        }
+
+        function angleDiffDeg(a, b) {
+            let d = mod180(a - b);
+            if (d > 90) d = 180 - d;
+            return Math.abs(d);
+        }
+
+        function areLinesSame(angleA, angleB, angTol) {
+            return angleDiffDeg(angleA, angleB) <= angTol;
+        }
+
+        function areLinesPerpendicular(angleA, angleB, angTol) {
+            const diff = Math.abs(angleA - angleB);
+            const normalizedDiff = Math.min(diff, 180 - diff);
+            return Math.abs(normalizedDiff - 90) <= angTol;
+        }
+
+        function infiniteLineFromTwoPoints(a, b) {
+            return { p: {x: a.x, y: a.y}, dir: { x: b.x - a.x, y: b.y - a.y } };
+        }
+        
+        function infiniteLineFromPointAndAngle(p, angleRad) {
+            return { p: p, dir: {x: Math.cos(angleRad), y: Math.sin(angleRad)}};
+        }
+
+        function intersectionOfLines(l1, l2) {
+            const x1=l1.p.x, y1=l1.p.y, x2=x1 + l1.dir.x, y2=y1 + l1.dir.y;
+            const x3=l2.p.x, y3=l2.p.y, x4=x3 + l2.dir.x, y4=y3 + l2.dir.y;
+            const den = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4);
+            if (Math.abs(den) < 1e-6) return null; // párhuzamos
+            const px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / den;
+            const py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / den;
+            return {x: px, y: py};
+        }
+
+        function reflectPoint(point, axis) {
+            const perpLine = {
+                p: point,
+                dir: { x: -axis.dir.y, y: axis.dir.x }
+            };
+            const intersection = intersectionOfLines(axis, perpLine);
+            if (intersection === null) return point;
+            const reflected = {
+                x: 2 * intersection.x - point.x,
+                y: 2 * intersection.y - point.y
+            };
+            return reflected;
+        }
+
+        function reflectLine(line, axis) {
+            const p1 = line.p;
+            const p2 = { 
+                x: line.p.x + (line.dir.x || 1), 
+                y: line.p.y + (line.dir.y || 0)
+            };
+            const p1Reflected = reflectPoint(p1, axis);
+            const p2Reflected = reflectPoint(p2, axis);
+            return infiniteLineFromTwoPoints(p1Reflected, p2Reflected);
+        }
+
+        function angleBisector(l1, l2, intersectionPoint) {
+            const dir1 = { x: l1.dir.x, y: l1.dir.y };
+            const dir2 = { x: l2.dir.x, y: l2.dir.y };
+            const len1 = Math.hypot(dir1.x, dir1.y);
+            const len2 = Math.hypot(dir2.x, dir2.y);
+            dir1.x /= len1; dir1.y /= len1;
+            dir2.x /= len2; dir2.y /= len2;
+            const bisectorDir = { x: dir1.x + dir2.x, y: dir1.y + dir2.y };
+            const bisectorLen = Math.hypot(bisectorDir.x, bisectorDir.y);
+            if (bisectorLen < 1e-6) return null;
+            bisectorDir.x /= bisectorLen;
+            bisectorDir.y /= bisectorLen;
+            return { p: intersectionPoint, dir: bisectorDir };
+        }
+        
+        // ----- ÚJ Segédfüggvények (off-canvas ellenőrzés) -----
+        
+        // Kiszámolja Y-t adott X-re
+        function findY(line, x) {
+            if (Math.abs(line.dir.x) < 1e-6) return null; // Függőleges
+            const t = (x - line.p.x) / line.dir.x;
+            return line.p.y + t * line.dir.y;
+        }
+
+        // Kiszámolja X-et adott Y-ra
+        function findX(line, y) {
+            if (Math.abs(line.dir.y) < 1e-6) return null; // Vízszintes
+            const t = (y - line.p.y) / line.dir.y;
+            return line.p.x + t * line.dir.x;
+        }
+        
+        // Ellenőrzi, hogy egy (végtelen) egyenes metszi-e a vásznat
+        function isLineOnCanvas(line) {
+            const W = canvas.width;
+            const H = canvas.height;
+            
+            // 1. eset: Vízszintes
+            if (Math.abs(line.dir.y) < 1e-6) {
+                const y = line.p.y;
+                return y >= 0 && y <= H;
+            }
+            // 2. eset: Függőleges
+            if (Math.abs(line.dir.x) < 1e-6) {
+                const x = line.p.x;
+                return x >= 0 && x <= W;
+            }
+            
+            // 3. eset: Ferde. Ellenőrizzük a 4 határ metszéspontját.
+            const y_at_x0 = findY(line, 0);
+            const y_at_xW = findY(line, W);
+            const x_at_y0 = findX(line, 0);
+            const x_at_yH = findX(line, H);
+
+            // Metszi a bal oldalt?
+            if (y_at_x0 !== null && y_at_x0 >= 0 && y_at_x0 <= H) return true;
+            // Metszi a jobb oldalt?
+            if (y_at_xW !== null && y_at_xW >= 0 && y_at_xW <= H) return true;
+            // Metszi a tetejét?
+            if (x_at_y0 !== null && x_at_y0 >= 0 && x_at_y0 <= W) return true;
+            // Metszi az alját?
+            if (x_at_yH !== null && x_at_yH >= 0 && x_at_yH <= W) return true;
+
+            // Ha egyiket sem metszi, nincs a vásznon
+            return false;
+        }
+
+        // ----- Vászon és logika -----
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const ANG_TOL = 2; // fok
+        const DIST_TOL = 12; // px
+
+        const W = canvas.width;
+        const H = canvas.height;
+
+        const parallelL1 = { p: {x: 80, y: 120}, dir: {x: 1, y: 0} };
+        const parallelL2 = { p: {x: 60, y: 280}, dir: {x: 1, y: 0} };
+
+        const center = { x: W/2, y: H/2 };
+        const angleA = -20 * DEG;
+        const angleB = 20 * DEG;
+        const interL1 = { p: {x: center.x - 300*Math.cos(angleA), y: center.y - 300*Math.sin(angleA)}, dir: { x: Math.cos(angleA), y: Math.sin(angleA) } };
+        const interL2 = { p: {x: center.x - 300*Math.cos(angleB), y: center.y - 300*Math.sin(angleB)}, dir: { x: Math.cos(angleB), y: Math.sin(angleB) } };
+        const interPoint = intersectionOfLines(interL1, interL2);
+        
+        let randomPointP = null;
+
+        function generateRandomPoint() {
+            if (currentTaskIndex === 3) { 
+                do {
+                    randomPointP = {
+                        x: Math.random() * (W - 200) + 100,
+                        y: Math.random() * (H - 100) + 50
+                    };
+                } while (Math.abs(randomPointP.y - 120) < 30 || Math.abs(randomPointP.y - 280) < 30);
+            } else {
+                randomPointP = {
+                    x: Math.random() * (W - 200) + 100,
+                    y: Math.random() * (H - 100) + 50
+                };
+            }
+        }
+
+        const tasks = [
+             {
+                id: 1,
+                text: '1) Helyezz el a síkon egy tükörtengelyt úgy, hogy a kék (k) és piros (p) egyenesek egymás képei legyenek.',
+                lines: [parallelL1, parallelL2], // k, p
+                check(axis) {
+                    const la = lineAngleDeg(parallelL1);
+                    const aa = lineAngleDeg(axis);
+                    const PAR_TOL = 1;
+                    const parallelOk = areLinesSame(la, aa, PAR_TOL);
+                    const nx = -axis.dir.y, ny = axis.dir.x;
+                    const nlen = Math.hypot(nx, ny);
+                    const ux = nx / nlen, uy = ny / nlen;
+                    const da = axis.p.x * ux + axis.p.y * uy;
+                    const d1 = parallelL1.p.x * ux + parallelL1.p.y * uy;
+                    const d2 = parallelL2.p.x * ux + parallelL2.p.y * uy;
+                    const s1 = d1 - da;
+                    const s2 = d2 - da;
+                    const MID_TOL = 24;
+                    const between = s1 * s2 < 0;
+                    const midOk = Math.abs(s1 + s2) <= MID_TOL;
+                    return parallelOk && between && midOk;
+                }
+            },
+            {
+                id: 2,
+                text: '2) Helyezz el a síkon egy tükörtengelyt úgy, hogy mindkét egyenes (k, p) képe önmaga legyen.',
+                lines: [parallelL1, parallelL2],
+                check(axis) {
+                    const la = lineAngleDeg(parallelL1);
+                    const aa = lineAngleDeg(axis);
+                    const PERP_TOL = 1; 
+                    const perpOk = areLinesPerpendicular(la, aa, PERP_TOL);
+                    return perpOk;
+                },
+                impossible: false
+            },
+            {
+                id: 3,
+                text: '3) Helyezz el a síkon egy tükörtengelyt úgy, hogy az egyik egyenes képe önmaga legyen, de a másiké ne.',
+                lines: [parallelL1, parallelL2],
+                check(axis) {
+                    const line1 = parallelL1;
+                    const line2 = parallelL2;
+                    const POINT_TOL = 10;
+                    const onLine1 = distancePointToLine(line1.p.x, line1.p.y, axis) < POINT_TOL && areLinesSame(lineAngleDeg(line1), lineAngleDeg(axis), 1);
+                    const onLine2 = distancePointToLine(line2.p.x, line2.p.y, axis) < POINT_TOL && areLinesSame(lineAngleDeg(line2), lineAngleDeg(axis), 1);
+                    return (onLine1 && !onLine2) || (!onLine1 && onLine2); // Szigorúbb XOR ellenőrzés
+                },
+                impossible: false
+            },
+            {
+                id: 4,
+                text: '4) Helyezz el egy P ponton átmenő tükörtengelyt úgy, hogy az egyik egyenes képe önmaga legyen, de a másiké ne.',
+                lines: [parallelL1, parallelL2],
+                points: [() => randomPointP],
+                check(axis) {
+                    return false;
+                },
+                impossible: true
+            },
+            {
+                id: 5,
+                text: '5) Helyezz el a síkon egy tükörtengelyt úgy, hogy a metszéspont és az egyik egyenes (k vagy p) képe is önmaga legyen, de a másik egyenesé ne.',
+                lines: [interL1, interL2],
+                check(axis) {
+                    const POINT_TOL = 10;
+                    const PERP_TOL = 8;
+                    const aa = lineAngleDeg(axis);
+                    const distToIntersection = distancePointToLine(interPoint.x, interPoint.y, axis);
+                    const passesThroughIntersection = distToIntersection <= POINT_TOL;
+                    if (!passesThroughIntersection) return false;
+
+                    const la1 = lineAngleDeg(interL1);
+                    const la2 = lineAngleDeg(interL2);
+
+                    const isPerpToL1 = areLinesPerpendicular(la1, aa, PERP_TOL);
+                    const isPerpToL2 = areLinesPerpendicular(la2, aa, PERP_TOL);
+                    const perpendicularSolution = (isPerpToL1 !== isPerpToL2); // XOR
+
+                    const isSameAsL1 = areLinesSame(la1, aa, ANG_TOL);
+                    const isSameAsL2 = areLinesSame(la2, aa, ANG_TOL);
+                    const identitySolution = (isSameAsL1 !== isSameAsL2); // XOR
+
+                    return perpendicularSolution || identitySolution;
+                },
+                impossible: false
+            },
+            {
+                id: 6,
+                text: '6) Helyezz el egy P ponton átmenő tükörtengelyt úgy, hogy a kék (k) egyenes képe (k\') párhuzamos legyen a piros (p) egyenessel.',
+                lines: [interL1, interL2], // Kék: interL1, Piros: interL2
+                points: [() => randomPointP],
+                check(axis) {
+                    const pointP = randomPointP;
+                    const POINT_TOL = 5;
+                    const distToP = distancePointToLine(pointP.x, pointP.y, axis);
+                    const passThroughP = distToP <= POINT_TOL;
+
+                    const bisector1 = angleBisector(interL1, interL2, interPoint);
+                    const bisector2 = {
+                        p: interPoint,
+                        dir: { x: -bisector1.dir.y, y: bisector1.dir.x }
+                    };
+
+                    const axisAngle = lineAngleDeg(axis);
+                    const bisector1Angle = lineAngleDeg(bisector1);
+                    const bisector2Angle = lineAngleDeg(bisector2);
+
+                    const isParallelToBisector1 = areLinesSame(axisAngle, bisector1Angle, ANG_TOL);
+                    const isParallelToBisector2 = areLinesSame(axisAngle, bisector2Angle, ANG_TOL);
+                    const parallelOk = isParallelToBisector1 || isParallelToBisector2;
+
+                    return passThroughP && parallelOk;
+                },
+                impossible: false
+            }
+        ];
+
+        // ----- Interakció: tengely rajzolása -----
+        let axisPoints = []; // max 2 pont
+        let isDragging = false;
+        let reflectedLines = [];
+        let animationRunning = false; 
+
+        function handleDragStart(x, y) {
+            if (animationRunning) return; 
+            axisPoints = [{x, y}];
+            isDragging = true;
+            statusMsg('');
+            reflectedLines = []; 
+            draw();
+        }
+
+        function handleDragMove(x, y) {
+            if (!isDragging || axisPoints.length === 0 || animationRunning) return;
+            axisPoints[1] = {x, y};
+            draw();
+        }
+
+        function handleDragEnd() {
+            isDragging = false;
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            handleDragStart(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            handleDragMove(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        document.addEventListener('mouseup', handleDragEnd);
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            handleDragStart(touch.clientX - rect.left, touch.clientY - rect.top);
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            handleDragMove(touch.clientX - rect.left, touch.clientY - rect.top);
+        }, { passive: false });
+
+        document.addEventListener('touchend', handleDragEnd);
+
+        canvas.addEventListener('dblclick', () => {
+            if (animationRunning) return;
+            axisPoints = [];
+            reflectedLines = [];
+            draw();
+            statusMsg('');
+        });
+
+        function currentAxisLine() {
+            if (axisPoints.length < 2) return null;
+            if (Math.hypot(axisPoints[1].x - axisPoints[0].x, axisPoints[1].y - axisPoints[0].y) < 8) return null;
+            return infiniteLineFromTwoPoints(axisPoints[0], axisPoints[1]);
+        }
+
+        // ----- Rajzolás -----
+        
+        function findPointOnLineAtX(line, x) {
+            if (Math.abs(line.dir.x) < 1e-6) { // Függőleges
+                let y = line.p.y;
+                if (y < 40) y = 40;
+                if (y > H - 40) y = H - 40;
+                return { x: line.p.x, y: y };
+            }
+            const t = (x - line.p.x) / line.dir.x;
+            let y = line.p.y + t * line.dir.y;
+            
+            // Címke Y pozíciójának korlátozása a vászonra
+            const margin = 40;
+            if (y < margin) y = margin;
+            if (y > H - margin) y = H - margin;
+            
+            // Visszaadjuk a pontot az eredeti X-szel, de korlátozott Y-nal
+            // NEM, vissza kell adni az X-nek megfelelő Y-t, de a *címke* kerüljön máshova
+            
+            let p_y = line.p.y + t * line.dir.y;
+            let clamped_y = Math.max(margin, Math.min(H - margin, p_y));
+            
+            // Ha az Y-t korlátoztuk, újra ki kell számolni az X-et
+            if (clamped_y !== p_y) {
+                 const t_new = (clamped_y - line.p.y) / line.dir.y;
+                 x = line.p.x + t_new * line.dir.x;
+            }
+            
+            return { x, y: clamped_y };
+        }
+
+        // MODOSÍTVA: Címke rajzolása merőleges eltolással
+        function drawTextLabel(text, line, color, isReflected = false) {
+            const xPos = isReflected ? W - 100 : 100; 
+            let p = findPointOnLineAtX(line, xPos);
+
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = 'bold 16px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Merőleges (normál) vektor számítása
+            let nx = -line.dir.y;
+            let ny = line.dir.x;
+            const len = Math.hypot(nx, ny);
+            
+            let unx = 0, uny = -1; // Alapértelmezett (felfelé)
+            if (len > 1e-6) {
+                unx = nx / len;
+                uny = ny / len;
+            }
+
+            const offsetDistance = 20;
+            
+            // Mindig "felfelé" (negatív y) toljuk, ha lehet
+            if (uny > 0) {
+                unx = -unx;
+                uny = -uny;
+            }
+            
+            const labelX = p.x + unx * offsetDistance;
+            const labelY = p.y + uny * offsetDistance;
+            
+            ctx.fillText(text, labelX, labelY);
+            ctx.restore();
+        }
+        
+        // ÚJ: Nyíl rajzolása (off-canvas jelzéshez)
+        function drawArrow(ctx, from, to, color, width) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = width;
+            
+            // Vonal
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+            
+            // Fej
+            const headLength = 10;
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(to.x, to.y);
+            ctx.lineTo(to.x - headLength * Math.cos(angle - Math.PI / 6), to.y - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(to.x - headLength * Math.cos(angle + Math.PI / 6), to.y - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // ÚJ: Off-canvas nyíl és címke rajzolása
+        function drawOffCanvasArrow(line, color, label) {
+            // Hol van az egyenes legközelebb a vászon közepéhez?
+            const center = {x: W/2, y: H/2};
+            const perpLine = { p: center, dir: { x: -line.dir.y, y: line.dir.x } };
+            const closestPoint = intersectionOfLines(line, perpLine) || center; // Ha párhuzamos, használjuk a közepet
+
+            // Hova mutat a vektor a központtól a legközelebbi pontig?
+            let dirX = closestPoint.x - center.x;
+            let dirY = closestPoint.y - center.y;
+            const len = Math.hypot(dirX, dirY);
+            if (len > 1e-6) {
+                dirX /= len;
+                dirY /= len;
+            }
+            
+            // Nyíl alapja (a vászon szélén)
+            // Kiterjesztjük a vektort, hogy biztosan a vásznon kívülről induljon
+            const farPoint = { x: center.x + dirX * 1000, y: center.y + dirY * 1000 };
+            // Levágjuk a vászon szélére
+            const arrowBase = {
+                x: Math.max(0, Math.min(W, farPoint.x)),
+                y: Math.max(0, Math.min(H, farPoint.y))
+            };
+            
+            // Nyíl vége (a vásznon belülre mutat)
+            const arrowEnd = {
+                x: arrowBase.x - dirX * 30, // 30px hosszú nyíl
+                y: arrowBase.y - dirY * 30
+            };
+            
+            drawArrow(ctx, arrowEnd, arrowBase, color, 3);
+            
+            // Címke elhelyezése a nyíl vége mellé
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = 'bold 16px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, arrowEnd.x - dirX * 15, arrowEnd.y - dirY * 15); // Kicsit hátrébb
+            ctx.restore();
+        }
+
+
+        function drawLine(line, color="#000", width=2, dash=[]) {
+            const a = {x: line.p.x, y: line.p.y};
+            const dir = line.dir;
+            const len = 2000;
+            const p1 = { x: a.x - dir.x * len, y: a.y - dir.y * len };
+            const p2 = { x: a.x + dir.x * len, y: a.y + dir.y * len };
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash(dash);
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineWidth = width;
+            ctx.strokeStyle = color;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawPoints(points, color="#22c55e") {
+            ctx.save();
+            ctx.fillStyle = color;
+            for (const pt of points) {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            
+            ctx.save();
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border');
+            ctx.lineWidth = 1;
+            for (let x=0; x<=W; x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+            for (let y=0; y<=H; y+=40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+            ctx.restore();
+
+            const t = tasks[currentTaskIndex];
+            
+            // EREDETI EGYENESEK (k és p)
+            if (t.lines) {
+                const colors = [
+                    getComputedStyle(document.documentElement).getPropertyValue('--blue'),
+                    getComputedStyle(document.documentElement).getPropertyValue('--red')
+                ];
+                const labels = ['k', 'p']; // k = kék, p = piros
+
+                for (const [i, line] of t.lines.entries()) {
+                    let color = colors[i] || getComputedStyle(document.documentElement).getPropertyValue('--fg');
+                    drawLine(line, color, 2);
+                    
+                    if (labels[i]) {
+                        drawTextLabel(labels[i], line, color, false);
+                    }
+                }
+            }
+
+            // TÜKRÖZÖTT EGYENESEK (k' és p')
+            if (reflectedLines.length > 0) {
+                for (const item of reflectedLines) {
+                    // item = { line, color, label }
+                    const line = item.line;
+                    const color = item.color;
+                    const label = item.label;
+
+                    // MODOSÍTVA: Ellenőrzés, hogy a vásznon van-e
+                    // Csak az animáció VÉGÉN ellenőrizzük, egyébként rajzoljuk
+                    if (animationRunning === false && !isLineOnCanvas(line)) {
+                        // Vásznon kívül van: nyíl rajzolása
+                        drawOffCanvasArrow(line, color, label);
+                    } else {
+                        // Vásznon van (vagy animálódik): egyenes rajzolása
+                        drawLine(line, color, 2, [4, 4]); // Szaggatott vonal
+                        if (label) {
+                            drawTextLabel(label, line, color, true);
+                        }
+                    }
+                }
+            }
+
+            if (t.id === 5) {
+                drawPoints([interPoint], getComputedStyle(document.documentElement).getPropertyValue('--text-muted'));
+            }
+            
+            if (t.points) {
+                for (const pointFn of t.points) {
+                    const point = pointFn();
+                    if (point) {
+                        drawPoints([point], getComputedStyle(document.documentElement).getPropertyValue('--yellow'));
+                        ctx.save();
+                        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg');
+                        ctx.font = '14px Inter';
+                        ctx.fillText('P', point.x + 8, point.y + 4);
+                        ctx.restore();
+                    }
+                }
+            }
+
+            // TENGELY
+            if (axisPoints.length > 0) {
+                const axisColor = getComputedStyle(document.documentElement).getPropertyValue('--green');
+                if (axisPoints.length === 1) {
+                    drawPoints(axisPoints, axisColor);
+                } else {
+                    const axis = currentAxisLine();
+                    if (axis) drawLine(axis, axisColor, 3, [8,6]);
+                    drawPoints(axisPoints, axisColor);
+                }
+            }
+        }
+
+        // ----- Ellenőrzés és státusz -----
+        const statusEl = document.getElementById('status');
+        const solvedTasks = [];
+
+        function statusMsg(msg, ok=null) {
+            statusEl.textContent = msg;
+            statusEl.className = 'status' + (ok===true ? ' ok' : ok===false ? ' err' : '');
+        }
+
+        function checkSolution() {
+            if (animationRunning) return; 
+
+            const axis = currentAxisLine();
+            if (!axis) {
+                statusMsg('Rajzold be a tükörtengelyt!', false);
+                reflectedLines = [];
+                draw();
+                return;
+            }
+
+            const t = tasks[currentTaskIndex];
+            const linesToAnimate = t.lines || [];
+            
+            if (linesToAnimate.length === 0) {
+                 const ok = t.check(axis);
+                 statusMsg(ok ? 'Helyes megoldás!' : 'Nem helyes, próbáld újra.', ok);
+                 if(ok && !solvedTasks.includes(t.id)) solvedTasks.push(t.id);
+                 return;
+            }
+
+            animationRunning = true;
+            document.getElementById('checkBtn').disabled = true;
+            statusMsg(''); 
+
+            const lightColors = [
+                getComputedStyle(document.documentElement).getPropertyValue('--blue-light'),
+                getComputedStyle(document.documentElement).getPropertyValue('--red-light')
+            ];
+            const reflectedLabels = ["k'", "p'"];
+
+            const startPoints = linesToAnimate.map(line => {
+                const p1 = line.p;
+                const p2 = { x: line.p.x + (line.dir.x || 1), y: line.p.y + (line.dir.y || 0) }; 
+                return [p1, p2];
+            });
+
+            const endPoints = startPoints.map(points => {
+                return [reflectPoint(points[0], axis), reflectPoint(points[1], axis)];
+            });
+
+            const animationDuration = 400; // ms
+            let startTime = null;
+
+            const animationLoop = (timestamp) => {
+                if (startTime === null) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(1, elapsed / animationDuration);
+                const easedProgress = 0.5 - 0.5 * Math.cos(progress * Math.PI); 
+
+                reflectedLines = linesToAnimate.map((_, i) => {
+                    const p1_interp = lerpPoint(startPoints[i][0], endPoints[i][0], easedProgress);
+                    const p2_interp = lerpPoint(startPoints[i][1], endPoints[i][1], easedProgress);
+                    const intermediateLine = infiniteLineFromTwoPoints(p1_interp, p2_interp);
+                    
+                    return {
+                        line: intermediateLine,
+                        color: lightColors[i] || '#aaaaaa',
+                        label: (progress === 1) ? (reflectedLabels[i] || '') : '' // Címke csak a végén
+                    };
+                });
+                
+                draw(); // Újrarajzolás minden képkockán
+
+                if (progress < 1) {
+                    requestAnimationFrame(animationLoop);
+                } else {
+                    animationRunning = false;
+                    document.getElementById('checkBtn').disabled = false;
+                    
+                    const ok = t.check(axis);
+                    if (ok) {
+                        statusMsg('Helyes megoldás!', true);
+                        if (!solvedTasks.includes(t.id)) {
+                            solvedTasks.push(t.id);
+                            updateTaskButtons();
+                        }
+                        if (solvedTasks.length === tasks.length) {
+                            showEndMessage();
+                        }
+                    } else {
+                        statusMsg('Nem helyes, próbáld újra.', false);
+                    }
+                    
+                    // Végső állapot újrarajzolása (ez fogja elindítani az off-canvas ellenőrzést)
+                    draw(); 
+                }
+            };
+
+            requestAnimationFrame(animationLoop);
+        }
+
+        function markImpossible() {
+            if (animationRunning) return;
+            const t = tasks[currentTaskIndex];
+            reflectedLines = [];
+            draw();
+            if (t.impossible) {
+                statusMsg('Helyes megoldás! (Ez a feladat valóban lehetetlen.)', true);
+                if (!solvedTasks.includes(t.id)) {
+                    solvedTasks.push(t.id);
+                    updateTaskButtons();
+                }
+                if (solvedTasks.length === tasks.length) {
+                    showEndMessage();
+                }
+            } else {
+                statusMsg('Ez a feladat megoldható. Próbáld meg újra!', false);
+            }
+        }
+
+        // ----- Navigáció -----
+        let currentTaskIndex = 0;
+
+        const taskText = document.getElementById('taskText');
+        const taskContainer = document.getElementById('taskContainer');
+        const endMessage = document.getElementById('endMessage');
+
+        function updateTaskText() { taskText.textContent = tasks[currentTaskIndex].text; }
+
+        function gotoTask(idx) {
+            if (animationRunning) return;
+            if (idx >= tasks.length) {
+                if (solvedTasks.length === tasks.length) {
+                    showEndMessage();
+                    return;
+                } else {
+                    idx = tasks.length - 1;
+                }
+            }
+            if (idx < 0) {
+                 idx = 0;
+            }
+            currentTaskIndex = idx;
+            axisPoints = [];
+            reflectedLines = []; 
+            
+            if (tasks[currentTaskIndex].id === 4 || tasks[currentTaskIndex].id === 6) {
+                generateRandomPoint();
+            } else {
+                randomPointP = null;
+            }
+
+            updateTaskText();
+            updateTaskButtons();
+            draw();
+            statusMsg('');
+        }
+
+        function showEndMessage() {
+            taskContainer.style.display = 'none';
+            endMessage.style.display = 'block';
+        }
+
+        function resetGame() {
+            if (animationRunning) return;
+            solvedTasks.length = 0;
+            taskContainer.style.display = 'block';
+            endMessage.style.display = 'none';
+            gotoTask(0);
+        }
+
+        const toggleWrap = document.getElementById('taskToggle');
+        function buildTaskButtons() {
+            for (let i=0; i<tasks.length; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = String(tasks[i].id);
+                btn.addEventListener('click', () => gotoTask(i));
+                toggleWrap.appendChild(btn);
+            }
+            updateTaskButtons();
+        }
+
+        function updateTaskButtons() {
+            [...toggleWrap.children].forEach((btn, i) => {
+                if (i === currentTaskIndex) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+                if (solvedTasks.includes(tasks[i].id)) {
+                    btn.classList.add('solved');
+                } else {
+                    btn.classList.remove('solved');
+                }
+            });
+        }
+
+        // ----- Gombok -----
+        document.getElementById('checkBtn').addEventListener('click', checkSolution);
+        document.getElementById('impossibleBtn').addEventListener('click', markImpossible);
+        document.getElementById('prevBtn').addEventListener('click', () => gotoTask(currentTaskIndex - 1));
+        document.getElementById('nextBtn').addEventListener('click', () => gotoTask(currentTaskIndex + 1));
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+
+        // Init
+        buildTaskButtons();
+        gotoTask(0);
+    </script>
+</body>
+</html>
