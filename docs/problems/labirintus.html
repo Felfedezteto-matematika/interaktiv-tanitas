@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Labirintus</title>
+    
+    <!-- Tailwind CSS betöltése -->
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        #game-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            max-width: 840px; 
+            width: 100%;
+        }
+        #mazeCanvas {
+            border: 4px solid #334155;
+            border-radius: 8px;
+            background-color: #e2e8f0;
+            display: block;
+            cursor: crosshair;
+            margin: 0 auto;
+            /* --- MOBIL MÓDOSÍTÁSOK --- */
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 800 / 600; 
+            /* --- VÉGE: MOBIL MÓDOSÍTÁSOK --- */
+        }
+        .game-button {
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .game-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+        }
+        .editor-hint {
+            border: 2px solid #f97316;
+            background-color: #fff7ed;
+        }
+        /* Egyedi modal stílus */
+        #customModal {
+            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.4);
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Labirintus</h1>
+    
+    <p class="text-gray-700 mb-4 font-semibold text-base p-2 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+        Mozgasd a piros pontot, és ennek segítségével vezesd át a kék pontot a labirintuson a zászlóig!
+    </p>
+
+    <!-- Pályaválasztó (ÚJ) -->
+    <div class="mb-4 flex flex-wrap justify-center items-center gap-y-2">
+        <label class="text-lg font-semibold text-gray-700 mr-3">Válassz pályát:</label>
+        <div id="levelSelector" class="inline-flex rounded-lg shadow-sm" role="group">
+            <button type="button" data-level="1" class="level-button bg-blue-500 text-white font-bold py-2 px-4 rounded-l-lg border border-gray-300">
+                1
+            </button>
+            <button type="button" data-level="2" class="level-button bg-white hover:bg-blue-100 text-blue-600 font-bold py-2 px-4 border border-gray-300">
+                2
+            </button>
+            <button type="button" data-level="3" class="level-button bg-white hover:bg-blue-100 text-blue-600 font-bold py-2 px-4 rounded-r-lg border border-gray-300">
+                3
+            </button>
+        </div>
+    </div>
+
+    <!-- Módválasztó gombok és Használat -->
+    <div class="flex flex-wrap justify-center gap-4 mb-4">
+        <button id="modePlayButton" class="game-button bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg">
+            Alapértelmezett játék
+        </button>
+        <button id="modeEditButton" class="game-button bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg">
+            Saját labirintus szerkesztése
+        </button>
+    </div>
+
+    <!-- Szerkesztő vezérlők (alapértelmezésben rejtett) -->
+    <div id="editorControls" class="flex flex-wrap justify-center gap-3 p-3 bg-gray-100 rounded-lg mb-4 hidden">
+        <!-- Kezdőpont beállítása és Célpont beállítása gombok eltávolítva -->
+        <button id="clearWallsButton" class="game-button bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+            Falak törlése
+        </button>
+        <button id="finishEditButton" class="game-button bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+            Játék a szerkesztett labirintuson
+        </button>
+    </div>
+    
+    <canvas id="mazeCanvas" width="800" height="600"></canvas>
+
+    <div class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div id="statusMessage" class="text-base md:text-lg font-semibold text-blue-600">
+            Kattints a kezdőpontra (lent) a rajzolás megkezdéséhez!
+        </div>
+        <button id="resetButton" class="game-button bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg">
+            Játék újrakezdése
+        </button>
+    </div>
+</div>
+
+<!-- Egyedi Modal párbeszédpanel (Használathoz is) -->
+<div id="customModal" class="fixed inset-0 flex items-center justify-center opacity-0 pointer-events-none">
+    <div class="modal-content bg-white p-6 rounded-xl w-11/12 md:w-4/5 lg:w-3/5 text-left">
+        <!--<h3 id="modalTitle" class="text-2xl font-bold mb-4 text-gray-800">Használati Útmutató</h3>
+        <div id="modalContent" class="mb-4 text-gray-700 leading-relaxed">
+            <!-- Ide kerül a Használat szövege
+        </div>-->
+        <div class="flex justify-end gap-3">
+            <button id="modalClose" class="py-2 px-4 bg-gray-300 hover:bg-gray-400 rounded-lg font-semibold">Bezárás</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Változók és Inicializálás ---
+    const canvas = document.getElementById('mazeCanvas');
+    const ctx = canvas.getContext('2d');
+    const resetButton = document.getElementById('resetButton');
+    const statusMessage = document.getElementById('statusMessage');
+    const editorControls = document.getElementById('editorControls');
+    const modePlayButton = document.getElementById('modePlayButton');
+    const modeEditButton = document.getElementById('modeEditButton');
+    // const setStartButton = document.getElementById('setStartButton'); // ELTÁVOLÍTVA
+    // const setGoalButton = document.getElementById('setGoalButton'); // ELTÁVOLÍTVA
+    const clearWallsButton = document.getElementById('clearWallsButton');
+    const finishEditButton = document.getElementById('finishEditButton');
+    const levelSelector = document.getElementById('levelSelector'); 
+
+    const customModal = document.getElementById('customModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    const modalClose = document.getElementById('modalClose');
+
+    const canvasWidth = 800;
+    const canvasHeight = 600;
+    const mirrorY = canvasHeight / 2; 
+
+    const PLAYER_RADIUS = 5;
+    const WALL_WIDTH = 15; 
+    const FALLBACK_DISTANCE_PX = 15; 
+    const centerPoint = { x: canvasWidth / 2, y: canvasHeight / 2 }; 
+
+    const FIXED_BOUNDARIES = [
+        { x1: 20, y1: 20, x2: 780, y2: 20 },     
+        { x1: 20, y1: 280, x2: 780, y2: 280 }, 
+        { x1: 20, y1: 20, x2: 20, y2: 280 },     
+        { x1: 780, y1: 20, x2: 780, y2: 280 },  
+    ];
+
+    const MAZE_DEFAULT_DATA = {
+        name: "Alapértelmezett labirintus",
+        start: { x: 50, y: 50 },
+        goal: { x: 750, y: 250 },
+        walls: [
+            ...FIXED_BOUNDARIES,
+            { x1: 150, y1: 20, x2: 150, y2: 220 },
+            { x1: 400, y1: 80, x2: 400, y2: 280 }, 
+            { x1: 500, y1: 20, x2: 500, y2: 120 }, 
+            { x1: 700, y1: 130, x2: 700, y2: 280 },
+            { x1: 150, y1: 100, x2: 250, y2: 100 }, 
+            { x1: 350, y1: 100, x2: 400, y2: 100 }, 
+            { x1: 500, y1: 200, x2: 600, y2: 200 }, 
+            { x1: 650, y1: 200, x2: 700, y2: 200 }  
+        ]
+    };
+
+    let MAZE_CUSTOM_DATA = {
+        name: "Saját labirintus",
+        start: { x: 50, y: 50 },
+        goal: { x: 750, y: 250 },
+        walls: [...FIXED_BOUNDARIES]
+    };
+    
+    let activeMaze = MAZE_DEFAULT_DATA; 
+    let useCustomMaze = false; 
+
+    let currentMode = 'play'; 
+    let activeLevel = 1;
+    let isDrawing = false; 
+    let labyrinthErrorCount = 0;
+    let labyrinthLastErrorTime = 0;
+    let labyrinthGameWon = false;
+    
+    let timerStartTime = 0;
+    let timerInterval = null;
+    let isTimerRunning = false; 
+
+    let editorAction = null; 
+    let wallStartPoint = null;
+
+    // Labda/pont pozíciók
+    let playerPos = { x: 0, y: 0 };      
+    let reflectedPos = { x: 0, y: 0 };   
+    let playerPath = [];
+    let reflectedPath = [];
+    let errorDots = [];
+
+    // Segédvászon az ütközés-detektáláshoz
+    const collisionCanvas = document.createElement('canvas');
+    collisionCanvas.width = canvasWidth;
+    collisionCanvas.height = mirrorY; 
+    const collisionCtx = collisionCanvas.getContext('2d');
+    
+    function setupCollisionCanvas() {
+        collisionCtx.clearRect(0, 0, collisionCanvas.width, collisionCanvas.height);
+        collisionCtx.strokeStyle = 'black'; 
+        collisionCtx.lineWidth = WALL_WIDTH;
+        collisionCtx.lineCap = 'round';
+        collisionCtx.beginPath();
+        activeMaze.walls.forEach(wall => {
+            collisionCtx.moveTo(wall.x1, wall.y1);
+            collisionCtx.lineTo(wall.x2, wall.y2);
+        });
+        collisionCtx.stroke();
+    }
+    
+    function getPlayerPosFromReflected(reflectedPos) {
+         switch (activeLevel) {
+            case 1: // Pálya 1: Eltolás (Kék = Piros - mirrorY => Piros = Kék + mirrorY)
+                return { x: reflectedPos.x, y: reflectedPos.y + mirrorY };
+
+            case 3: // Pálya 3: Középpontos tükrözés (Kék = 2C - Piros => Piros = 2C - Kék)
+                return { 
+                    x: 2 * centerPoint.x - reflectedPos.x, 
+                    y: 2 * centerPoint.y - reflectedPos.y 
+                };
+                
+            case 2: // Pálya 2: Tengelyes tükrözés
+            default:
+                const distanceToMirror = mirrorY - reflectedPos.y;
+                return { x: reflectedPos.x, y: mirrorY + distanceToMirror };
+        }
+    }
+    
+    function getReflectedPos(pos) { 
+        switch (activeLevel) {
+            case 1: // Pálya 1: Eltolás (Kék = Piros - mirrorY)
+                return { x: pos.x, y: pos.y - mirrorY }; 
+                
+            case 3: // Pálya 3: Középpontos tükrözés (Kék = 2C - Piros)
+                return { 
+                    x: 2 * centerPoint.x - pos.x, 
+                    y: 2 * centerPoint.y - pos.y 
+                };
+
+            case 2: // Pálya 2: Tengelyes tükrözés (Eredeti)
+            default:
+                const distanceToMirror = pos.y - mirrorY;
+                return { x: pos.x, y: mirrorY - distanceToMirror };
+        }
+    }
+
+    function isLabyrinthCollision(pos) {
+        if (pos.y < 0 || pos.y >= mirrorY) return false; 
+        const x = Math.round(pos.x);
+        const y = Math.round(pos.y);
+        
+        if (x < 0 || x >= collisionCanvas.width || y < 0 || y >= collisionCanvas.height) return false;
+        
+        for (let dx = -PLAYER_RADIUS; dx <= PLAYER_RADIUS; dx += PLAYER_RADIUS) {
+            for (let dy = -PLAYER_RADIUS; dy <= PLAYER_RADIUS; dy += PLAYER_RADIUS) {
+                const checkX = Math.round(x + dx);
+                const checkY = Math.round(y + dy);
+                if (checkX >= 0 && checkX < collisionCanvas.width && checkY >= 0 && checkY < collisionCanvas.height) {
+                    const pixelData = collisionCtx.getImageData(checkX, checkY, 1, 1).data;
+                    if (pixelData[3] > 0) return true; 
+                }
+            }
+        }
+        return false;
+    }
+
+    
+
+    function registerLabyrinthError(reflectedPos) {
+        const now = Date.now();
+        if (now - labyrinthLastErrorTime < 300) return; 
+        labyrinthErrorCount++;
+        labyrinthLastErrorTime = now;
+        errorDots.push({ ...reflectedPos }); 
+    }
+    
+    function checkWin() {
+        if (labyrinthGameWon) return;
+        const dist = Math.hypot(reflectedPos.x - activeMaze.goal.x, reflectedPos.y - activeMaze.goal.y);
+        
+        // Cél elérése
+        if (dist < PLAYER_RADIUS + WALL_WIDTH / 2) { 
+            isDrawing = false;
+            labyrinthGameWon = true; 
+            
+            if (timerInterval) clearInterval(timerInterval); 
+            timerInterval = null;
+            
+            const finalTime = isTimerRunning ? ((Date.now() - timerStartTime) / 1000).toFixed(2) : "0.00"; 
+            isTimerRunning = false; 
+            
+            if (labyrinthErrorCount === 0) {
+                updateStatus(`Gratulálok, hibapont nélkül elérted a célt! Idő: ${finalTime} mp.`); 
+                statusMessage.className = "text-lg font-semibold p-2 rounded-lg bg-green-100 text-green-600";
+            } else {
+                updateStatus(`Célba értél, gratulálunk. Idő: ${finalTime} mp, hibapontok száma: ${labyrinthErrorCount}.`); 
+                statusMessage.className = "text-lg font-semibold p-2 rounded-lg bg-green-100 text-green-600";
+            }
+        }
+    }
+    
+    function handleEditorClick(pos) {
+        if (pos.y > mirrorY) {
+            updateStatus("Csak a felső labirintus területén szerkeszthetsz!");
+            return;
+        }
+
+        switch (editorAction) {
+            case 'draw_wall':
+                if (!wallStartPoint) {
+                    wallStartPoint = { x: pos.x, y: pos.y };
+                    updateStatus("Fal rajzolása: Kattints a fal végpontjára!");
+                } else {
+                    MAZE_CUSTOM_DATA.walls.push({ 
+                        x1: wallStartPoint.x, y1: wallStartPoint.y, 
+                        x2: pos.x, y2: pos.y 
+                    });
+                    wallStartPoint = null;
+                    updateStatus(`Új fal hozzáadva. Rajzolj új falat!`); // Módosított üzenet
+                }
+                break;
+        }
+        setupCollisionCanvas(); 
+    }
+
+    function switchMode(newMode, forceMazeUpdate = false) { 
+        currentMode = newMode;
+        
+        modePlayButton.classList.remove('bg-green-500', 'hover:bg-green-600', 'bg-gray-500', 'hover:bg-gray-600');
+        modeEditButton.classList.remove('bg-orange-500', 'hover:bg-orange-600', 'bg-gray-500', 'hover:bg-gray-600');
+
+        if (newMode === 'play') {
+            useCustomMaze = forceMazeUpdate; 
+            activeMaze = useCustomMaze ? MAZE_CUSTOM_DATA : MAZE_DEFAULT_DATA;
+            
+            editorControls.classList.add('hidden');
+            
+            modePlayButton.classList.add('bg-green-500', 'hover:bg-green-600');
+            modeEditButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
+            
+            resetGame();
+        } else if (newMode === 'edit') {
+            activeMaze = MAZE_CUSTOM_DATA; 
+            editorControls.classList.remove('hidden');
+            
+            modeEditButton.classList.add('bg-orange-500', 'hover:bg-orange-600');
+            modePlayButton.classList.add('bg-gray-500', 'hover:bg-gray-600');
+            
+            enterEditorMode();
+        }
+    }
+    
+    function enterEditorMode() {
+        editorAction = 'draw_wall'; 
+        wallStartPoint = null;
+        setupCollisionCanvas();
+        updateStatus("Szerkesztő mód: Kattints kétszer a labirintusban egy új fal berajzolásához (vagy töröld a falakat)!"); // Módosított üzenet
+        statusMessage.className = "text-lg font-bold p-2 rounded-lg editor-hint text-orange-700";
+    }
+
+    function resetGame() {
+        isDrawing = false;
+        labyrinthErrorCount = 0;
+        labyrinthLastErrorTime = 0;
+        labyrinthGameWon = false;
+        playerPath = [];
+        reflectedPath = [];
+        errorDots = [];
+        
+        // Időmérő nullázása
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+        isTimerRunning = false;
+        timerStartTime = 0;
+        
+        reflectedPos = { x: activeMaze.start.x, y: activeMaze.start.y }; 
+        playerPos = getPlayerPosFromReflected(reflectedPos); 
+        
+        playerPath.push({ ...playerPos });
+        reflectedPath.push({ ...reflectedPos });
+
+        setupCollisionCanvas();
+        
+        // Státusz üzenet frissítése a pályaszámmal
+        let levelName = "";
+        switch(activeLevel) {
+            case 1: levelName = "1. pálya"; break;
+            case 2: levelName = "2. pálya"; break;
+            default: levelName = "3. pálya"; break;
+        }
+        const mazeName = useCustomMaze ? "Saját labirintus" : (activeMaze.name || "Alapértelmezett");
+        
+        updateStatus(`${mazeName} - ${levelName}. Hibapontok: 0.`);
+        statusMessage.className = "text-lg font-semibold p-2 rounded-lg text-blue-600";
+    }
+
+    function updateStatus(message) {
+        statusMessage.textContent = message;
+    }
+
+    // --- ÚJ: Időmérő kijelző frissítő ---
+    function updateTimerDisplay() {
+        if (!isTimerRunning) return;
+        const seconds = ((Date.now() - timerStartTime) / 1000).toFixed(1);
+        updateStatus(`${seconds} mp. Hibapontok: ${labyrinthErrorCount}.`);
+        statusMessage.className = "text-lg font-semibold p-2 rounded-lg bg-blue-100 text-blue-600";
+    }
+
+    // --- Rajzoló Funkciók ---
+    function draw() {
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // 1. Labirintus falak (felső fél)
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = WALL_WIDTH / 2;
+        ctx.lineCap = 'round';
+        activeMaze.walls.forEach(wall => {
+            ctx.beginPath();
+            ctx.moveTo(wall.x1, wall.y1);
+            ctx.lineTo(wall.x2, wall.y2);
+            ctx.stroke();
+        });
+
+        // Szerkesztő mód vizuális segítség: fal előnézete
+        if (currentMode === 'edit' && wallStartPoint) {
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+            ctx.lineWidth = WALL_WIDTH / 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(wallStartPoint.x, wallStartPoint.y);
+            ctx.setLineDash([]);
+        }
+
+        // 2. Cél zászló (felső fél)
+        drawFlag(activeMaze.goal.x, activeMaze.goal.y);
+        
+        // 3. Tükör vonal (Csak Pálya 2-n látszik)
+        if (activeLevel === 2) {
+            ctx.strokeStyle = 'rgba(0, 150, 255, 0.5)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, mirrorY);
+            ctx.lineTo(canvasWidth, mirrorY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // 3b. Középpont (Csak Pálya 3-n látszik)
+        if (activeLevel === 3) {
+            drawDot(centerPoint.x, centerPoint.y, 'rgba(0, 150, 255, 0.5)', 5);
+        }
+
+
+        // Játék/Szerkesztő módban rajzolja az utat és a pontokat
+        if (currentMode === 'play') {
+            // 4. Utak és hibák
+            drawPath(playerPath, 'red');       
+            drawPath(reflectedPath, '#007bff'); 
+
+            errorDots.forEach(dot => {
+                drawDot(dot.x, dot.y, 'red', PLAYER_RADIUS * 1.5); 
+            });
+
+            // 5. Pontok
+            drawDot(playerPos.x, playerPos.y, 'red', PLAYER_RADIUS);     
+            drawDot(reflectedPos.x, reflectedPos.y, 'blue', PLAYER_RADIUS);
+        } else if (currentMode === 'edit') {
+             // Szerkesztőben is mutatja a pontokat az aktuális transzformációnak megfelelően
+            drawDot(playerPos.x, playerPos.y, 'gray', PLAYER_RADIUS);
+            drawDot(reflectedPos.x, reflectedPos.y, 'blue', PLAYER_RADIUS);
+        }
+
+        // Mindig rajzolja a kezdőpontot (a felső félben)
+        drawDot(activeMaze.start.x, activeMaze.start.y, 'green', PLAYER_RADIUS);
+
+        requestAnimationFrame(draw);
+    }
+    
+    function drawDot(x, y, color, radius) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    function drawPath(path, color, lineWidth = 2) {
+        if (path.length < 2) return;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+        for (let i = 1; i < path.length; i++) {
+            ctx.lineTo(path[i].x, path[i].y);
+        }
+        ctx.stroke();
+    }
+
+    function drawFlag(x, y) {
+        ctx.save();
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x - 2, y - 25, 2, 25); 
+        ctx.fillStyle = 'green';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 25);
+        ctx.lineTo(x + 15, y - 20);
+        ctx.lineTo(x, y - 15);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let clientX = evt.clientX;
+        let clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+        if (evt.touches) {
+            clientX = evt.touches[0].clientX;
+            clientY = evt.touches[0].clientY;
+        }
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+    
+    function startDrag(e) {
+        e.preventDefault();
+        const pos = getMousePos(e);
+        
+        if (currentMode === 'edit') {
+            isDrawing = true;
+            playerPos = pos; 
+            reflectedPos = getReflectedPos(playerPos);
+            return;
+        }
+        
+        if (labyrinthGameWon) return;
+        
+        // Pálya 1 és 2 esetén csak az alsó félben foghatjuk meg
+        if (activeLevel === 1 || activeLevel === 2) {
+            if (pos.y < mirrorY) return; 
+        }
+        if (pos.y < mirrorY && activeLevel === 3) {
+             // Engedjük meg, de a dragMouse korlátozni fogja
+        }
+
+        const dist = Math.hypot(pos.x - playerPos.x, pos.y - playerPos.y);
+
+        if (dist < PLAYER_RADIUS * 3) { 
+            isDrawing = true;
+
+            // --- Időmérő indítása/folytatása ---
+            if (!isTimerRunning) { 
+                isTimerRunning = true;
+                timerStartTime = Date.now();
+            }
+            if (timerInterval) clearInterval(timerInterval); 
+            timerInterval = setInterval(updateTimerDisplay, 100); 
+            // --- Vége: Időmérő ---
+        }
+    }
+
+    function stopDrag(e) {
+        e.preventDefault();
+        isDrawing = false;
+        
+        if (timerInterval) clearInterval(timerInterval); 
+        timerInterval = null;
+        
+        if (currentMode === 'edit') {
+            // Szerkesztő módban a wallStartPointot nullázza a click esemény, itt csak a mozgást állítja le
+            return; 
+        }
+
+        if (!labyrinthGameWon) {
+            updateStatus(`Szünet. Hibapontok: ${labyrinthErrorCount}. Folytasd a piros ponttól!`);
+            statusMessage.className = "text-lg font-semibold p-2 rounded-lg bg-orange-100 text-orange-600";
+        }
+    }
+
+    function dragMouse(e) {
+        e.preventDefault();
+        if (!isDrawing) return;
+        
+        const pos = getMousePos(e);
+        
+        if (currentMode === 'edit') {
+            playerPos = pos;
+            reflectedPos = getReflectedPos(playerPos);
+            return;
+        }
+
+        if (labyrinthGameWon) return;
+        
+        const previousPlayerPos = { x: playerPos.x, y: playerPos.y };
+        const previousReflectedPos = { x: reflectedPos.x, y: reflectedPos.y };
+
+        let newPlayerPos = pos;
+        
+        // Pálya 1 és 2 esetén a piros pontot az alsó félben tartjuk
+        if (activeLevel === 1 || activeLevel === 2) {
+            if (newPlayerPos.y < mirrorY) newPlayerPos.y = mirrorY; 
+            if (newPlayerPos.y > canvasHeight) newPlayerPos.y = canvasHeight;
+        }
+        
+        playerPos = newPlayerPos;
+        reflectedPos = getReflectedPos(playerPos);
+/*
+        if (isLabyrinthCollision(reflectedPos)) {
+            registerLabyrinthError(reflectedPos);
+            
+            isDrawing = false; 
+            
+            if (timerInterval) clearInterval(timerInterval); 
+            timerInterval = null;
+            
+            // Visszagörgetés a biztonságos helyre
+            const dx = previousReflectedPos.x - reflectedPos.x;
+            const dy = previousReflectedPos.y - reflectedPos.y;
+            const distance = Math.hypot(dx, dy);
+
+            if (distance > 0) {
+                const unitX = dx / distance;
+                const unitY = dy / distance;
+                const rollbackDist = Math.min(FALLBACK_DISTANCE_PX, distance);
+
+                const newReflectedX = reflectedPos.x + unitX * rollbackDist;
+                const newReflectedY = reflectedPos.y + unitY * rollbackDist;
+
+                reflectedPos = { x: newReflectedX, y: newReflectedY };
+                playerPos = getPlayerPosFromReflected(reflectedPos); 
+            } else {
+                playerPos = previousPlayerPos;
+                reflectedPos = previousReflectedPos;
+            }
+            
+            // Az utolsó, ütközést okozó pont eltávolítása az útból
+            if (playerPath.length > 0) {
+                 playerPath.pop();
+                 reflectedPath.pop();
+            }
+
+            playerPath.push(playerPos); 
+            reflectedPath.push(reflectedPos);
+            
+            updateStatus(`Falba ütköztél! Kattints a piros pontra a folytatáshoz.`);
+            statusMessage.className = "text-lg font-bold p-2 rounded-lg bg-red-100 text-red-600";
+            
+            return; 
+        }
+*/
+
+if (isLabyrinthCollision(reflectedPos)) {
+            registerLabyrinthError(reflectedPos);
+            
+            isDrawing = false; 
+            
+            if (timerInterval) clearInterval(timerInterval); 
+            timerInterval = null;
+            
+            // Visszagörgetés biztonságos helyre - kellően messzire a faltól
+            const dx = previousReflectedPos.x - reflectedPos.x;
+            const dy = previousReflectedPos.y - reflectedPos.y;
+            const distance = Math.hypot(dx, dy);
+
+            if (distance > 0) {
+                const unitX = dx / distance;
+                const unitY = dy / distance;
+                
+                // Nagyobb visszagörgetési távolság a biztonságos újraindításhoz
+                let rollbackDist = FALLBACK_DISTANCE_PX;
+                let attempts = 0;
+                let safeReflectedPos;
+                
+                // Keressünk egy biztonságos pozíciót
+                while (attempts < 10) {
+                    const testX = reflectedPos.x + unitX * rollbackDist;
+                    const testY = reflectedPos.y + unitY * rollbackDist;
+                    safeReflectedPos = { x: testX, y: testY };
+                    
+                    if (!isLabyrinthCollision(safeReflectedPos)) {
+                        break;
+                    }
+                    rollbackDist += 5;
+                    attempts++;
+                }
+                
+                // Ha találtunk biztonságos pozíciót, használjuk azt
+                if (safeReflectedPos && !isLabyrinthCollision(safeReflectedPos)) {
+                    reflectedPos = safeReflectedPos;
+                    playerPos = getPlayerPosFromReflected(reflectedPos); 
+                } else {
+                    // Fallback: használjuk az előző biztos pozíciót
+                    playerPos = previousPlayerPos;
+                    reflectedPos = previousReflectedPos;
+                }
+            } else {
+                playerPos = previousPlayerPos;
+                reflectedPos = previousReflectedPos;
+            }
+            
+            // Az utolsó, ütközést okozó pont eltávolítása az útból
+            if (playerPath.length > 0) {
+                 playerPath.pop();
+                 reflectedPath.pop();
+            }
+
+            playerPath.push({ ...playerPos }); 
+            reflectedPath.push({ ...reflectedPos });
+            
+            updateStatus(`Falba ütköztél! Kattints a piros pontra a folytatáshoz.`);
+            statusMessage.className = "text-lg font-bold p-2 rounded-lg bg-red-100 text-red-600";
+            
+            return; 
+        }
+        playerPath.push(playerPos);
+        reflectedPath.push(reflectedPos);
+        
+        checkWin();
+    }
+
+    modePlayButton.addEventListener('click', () => switchMode('play', false)); 
+    
+    modeEditButton.addEventListener('click', () => switchMode('edit')); 
+    
+    finishEditButton.addEventListener('click', () => switchMode('play', true)); 
+    
+    resetButton.addEventListener('click', resetGame);
+    
+    // setStartButton.addEventListener('click', ...)  ELTÁVOLÍTVA
+    // setGoalButton.addEventListener('click', ...)  ELTÁVOLÍTVA
+    
+    clearWallsButton.addEventListener('click', () => { 
+        MAZE_CUSTOM_DATA.walls = [...FIXED_BOUNDARIES]; 
+        MAZE_CUSTOM_DATA.start = { x: 50, y: 50 };
+        MAZE_CUSTOM_DATA.goal = { x: 750, y: 250 };
+        setupCollisionCanvas();
+        updateStatus("Minden egyedi fal törölve, kezdő és célpont visszaállítva az alapértelmezett pozícióba. Kezdd újra a rajzolást!"); 
+        statusMessage.className = "text-lg font-bold p-2 rounded-lg editor-hint text-red-600";
+    });
+
+    // --- Pályaválasztó Eseménykezelő ---
+    levelSelector.addEventListener('click', (e) => {
+        const button = e.target.closest('.level-button');
+        if (!button) return;
+
+        const newLevel = parseInt(button.dataset.level, 10);
+        if (newLevel === activeLevel) return;
+
+        activeLevel = newLevel;
+
+        // Gombok stílusának frissítése
+        levelSelector.querySelectorAll('.level-button').forEach(btn => {
+            if (parseInt(btn.dataset.level, 10) === activeLevel) {
+                btn.classList.add('bg-blue-500', 'text-white');
+                btn.classList.remove('bg-white', 'hover:bg-blue-100', 'text-blue-600');
+            } else {
+                btn.classList.remove('bg-blue-500', 'text-white');
+                btn.classList.add('bg-white', 'hover:bg-blue-100', 'text-blue-600');
+            }
+        });
+        
+        resetGame();
+    });
+
+
+    // Vászon eseménykezelők
+    canvas.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentMode === 'edit') {
+            handleEditorClick(getMousePos(e));
+        }
+    });
+
+    canvas.addEventListener('mousedown', startDrag);
+    canvas.addEventListener('mouseup', stopDrag);
+    canvas.addEventListener('mouseout', stopDrag);
+    canvas.addEventListener('mousemove', dragMouse);
+
+    canvas.addEventListener('touchstart', startDrag, { passive: false });
+    canvas.addEventListener('touchend', stopDrag, { passive: false });
+    canvas.addEventListener('touchcancel', stopDrag, { passive: false });
+    canvas.addEventListener('touchmove', dragMouse, { passive: false });
+
+    // Inicializálás
+    switchMode('play'); 
+    requestAnimationFrame(draw);
+</script>
+
+</body>
+</html>
