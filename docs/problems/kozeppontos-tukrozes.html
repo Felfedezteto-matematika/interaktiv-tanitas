@@ -165,7 +165,7 @@
             const startY = 380;
 
             // Vonal
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            const line = document.createElementNS("https://www.w3.org/2000/svg", "line");
             setAttributes(line, {
                 x1: startX,
                 y1: startY,
@@ -177,7 +177,7 @@
             svgCanvas.appendChild(line);
 
             // Jelölők
-            const tick1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            const tick1 = document.createElementNS("https://www.w3.org/2000/svg", "line");
             setAttributes(tick1, {
                 x1: startX,
                 y1: startY - 5,
@@ -188,7 +188,7 @@
             });
             svgCanvas.appendChild(tick1);
 
-            const tick2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            const tick2 = document.createElementNS("https://www.w3.org/2000/svg", "line");
             setAttributes(tick2, {
                 x1: endX,
                 y1: startY - 5,
@@ -200,7 +200,7 @@
             svgCanvas.appendChild(tick2);
 
             // Szöveg
-            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            const text = document.createElementNS("https://www.w3.org/2000/svg", "text");
             setAttributes(text, {
                 x: startX + 50,
                 y: startY - 10,
