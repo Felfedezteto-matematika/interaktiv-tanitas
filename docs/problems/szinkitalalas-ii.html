@@ -4,54 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Színkitalálás II.</title>
-    <!-- Tailwind CSS betöltése -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* A rács celláinak alapstílusa */
+        #grid-container {
+            background-color: rgba(0, 0, 0, 0.07);
+            gap: 3px;
+            padding: 1px;
+        }
         .grid-cell {
             width: 100%;
             height: 100%;
             cursor: pointer;
-            transition: background-color 0.5s ease-in-out, box-shadow 0.15s ease-in-out, opacity 0.3s; /* Hozzáadva az opacity-t az áttűnésekhez */
-            border: 1px solid rgba(0, 0, 0, 0.05); /* Nagyon vékony elválasztóvonal */
+            transition: background-color 0.5s ease-in-out, box-shadow 0.15s ease-in-out, opacity 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 0.6rem;
-            position: relative; 
+            position: relative;
+            padding: 10%;
+            border-radius: 2px;
+            background-color: #f3f4f6;
         }
-
-        /* Szimmetriaközéppont jelölő pötty */
-        /* A pötty a 2x3-as blokkok találkozásánál, a cella jobb alsó sarkában jelenik meg */
         .grid-cell.center-marker::after {
             content: '';
             position: absolute;
-            right: -3px; /* Jobb alsó sarokhoz igazítás */
-            bottom: -3px; /* Jobb alsó sarokhoz igazítás */
+            right: -3px;
+            bottom: -3px;
             width: 6px;
             height: 6px;
-            background-color: #374151; /* Sötét pötty */
+            background-color: #374151;
             border-radius: 50%;
             z-index: 10;
         }
-        
-        /* Ismeretlen (kitalálandó) cella stílusa */
-        .unknown-cell {
-            background-color: #f3f4f6; /* Halvány szürke háttér */
-        }
-
-        /* Célcella (amit épp ki kell találni) jelölése */
+        .unknown-cell { /* háttérszín a .grid-cell alapstílusból jön */ }
         .target-cell {
-            box-shadow: 0 0 0 3px #1f2937 inset; /* Sötét keret */
+            box-shadow: 0 0 0 3px #1f2937 inset;
             animation: pulse-shadow 1s infinite alternate;
         }
-
         @keyframes pulse-shadow {
             from { box-shadow: 0 0 0 3px #1f2937 inset; }
-            to { box-shadow: 0 0 0 5px #f59e0b inset; }
+            to   { box-shadow: 0 0 0 5px #f59e0b inset; }
         }
-
-        /* Színválasztó gombok stílusa a modalban */
         .color-option-button {
             width: 40px;
             height: 40px;
@@ -59,9 +52,38 @@
             transition: transform 0.1s, opacity 0.1s;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .color-option-button:hover {
-            transform: scale(1.05);
-            opacity: 0.9;
+        .color-option-button:hover { transform: scale(1.05); opacity: 0.9; }
+        .painted-dot {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 35%; height: 35%;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .initial-cell { box-shadow: 0 0 0 2px #1f2937 inset; }
+        .guess-result-emoji {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 6;
+        }
+        .paint-modal-label {
+            font-size: 0.6rem;
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 3px;
+            display: none;
+        }
+        #color-picker-modal.paint-mode .paint-modal-label { display: block; }
+        #color-picker-modal.paint-mode .color-option-button {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -70,36 +92,26 @@
     <div id="game-container" class="w-full max-w-4xl bg-white p-6 sm:p-8 rounded-xl shadow-2xl transition-all relative">
         <h1 class="text-3xl font-extrabold text-gray-800 mb-2 text-center">Színkitalálás II.</h1>
         <p class="text-center text-gray-600 mb-6 text-sm">
-             A lenti ábrán a fekete pöttyök szimmetria középpontok. Néhány mező színét megadtuk, ezek alapján kell kitalálnod 5 mező színét. Cél, hogy minél többször helyesen tippelj, minél kevesebb idő alatt. Más mezőket színét is megadhatod, ez nem számít bele a pontozásba.
+            A lenti ábrán a fekete pöttyök szimmetria középpontok. Néhány mező színét megadtuk, ezek alapján kell kitalálnod 5 mező színét. Cél, hogy minél többször helyesen tippelj, minél kevesebb idő alatt. Más mezőkre is rakhatsz jelölőt, ez nem számít tippnek.
         </p>
-
         <div class="flex justify-center items-center mb-6">
             <div id="score-display" class="text-2xl font-bold text-gray-700 p-3 bg-gray-100 rounded-lg w-full sm:w-1/2 max-w-sm text-center">Pontszám: 0</div>
         </div>
+        <div id="grid-container" class="mx-auto relative" style="display: grid; grid-template-columns: repeat(12, 1fr); aspect-ratio: 1 / 1; width: 100%; max-width: 600px;"></div>
 
-        <!-- Játék rács - 12x12 -->
-        <div id="grid-container" class="mx-auto relative" style="display: grid; grid-template-columns: repeat(12, 1fr); aspect-ratio: 1 / 1; width: 100%; max-width: 600px;">
-            <!-- Cella elemeket a JavaScript fogja generálni -->
-        </div>
-
-        <!-- Színválasztó Modal (Color Picker) - Abszolút pozícionálással a rácson belül -->
         <div id="color-picker-modal" class="absolute hidden bg-white p-2 rounded-lg shadow-xl border border-gray-200 z-30 transition-opacity duration-100">
+            <div class="paint-modal-label">Ez csak jelölő, nem tipp</div>
             <div id="color-options" class="flex space-x-1">
                 <button class="color-option-button" style="background-color: #ef4444;" data-color="C0" aria-label="Piros"></button>
                 <button class="color-option-button" style="background-color: #10b981;" data-color="C1" aria-label="Zöld"></button>
                 <button class="color-option-button" style="background-color: #3b82f6;" data-color="C2" aria-label="Kék"></button>
             </div>
-            <!-- Kis nyíl a modal alján, ami a rácsra mutat -->
             <div class="absolute w-3 h-3 bg-white transform rotate-45 border-t border-l border-gray-200" style="bottom: -6px; left: 50%; margin-left: -6px; pointer-events: none;"></div>
         </div>
 
-        <!-- Játék vége/üzenet modal -->
         <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div class="bg-white p-8 rounded-lg shadow-2xl text-center max-w-sm w-full relative"> <!-- MÓDOSÍTVA: 'relative' hozzáadva -->
-                
-                <!-- ÚJ: Bezárás gomb -->
+            <div class="bg-white p-8 rounded-lg shadow-2xl text-center max-w-sm w-full relative">
                 <button id="close-modal-button" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl font-bold w-8 h-8 rounded-full transition-colors" aria-label="Bezárás">&times;</button>
-                
                 <h2 id="modal-title" class="text-3xl font-bold mb-4 text-gray-800">Véget ért a játék</h2>
                 <p id="modal-message" class="text-lg text-gray-600 mb-6">Elért pontszám: 0</p>
                 <button id="restart-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Új játék</button>
@@ -108,565 +120,357 @@
     </div>
 
     <script>
-        // === SZERKESZTHETŐ KONFIGURÁCIÓ ===
-        
-        // 1. A JÁTÉK ALAPMINTÁJA (2x6 egység = 12 típus)
-        // Ezt a 2x6-os tömböt ismétli a teljes 12x12-es rács.
-        // A mintázat 4 Piros (0), 4 Zöld (1) és 4 Kék (2) színt tartalmaz, ami garantálja a színegyensúlyt.
-/* const EDITABLE_BASE_UNIT = [
-            [0, 1, 1, 0, 2, 1], // R, G, B, R, G, B (Össz: 2R, 2G, 2B)
-            [2, 0, 2, 1, 0, 1]  // B, G, R, B, G, R (Össz: 2R, 2G, 2B)
-        ];*/
-        const COLORS = [
-            '#ef4444', // C0: Piros (Red)
-            '#10b981', // C1: Zöld (Green)
-            '#3b82f6'  // C2: Kék (Blue)
-        ];
+    (() => {
+        const CFG = {
+            GRID_SIZE:   12,
+            UNIT_ROWS:   2,
+            UNIT_COLS:   3,
+            GUESS_GOAL:  5,
+            COLORS: ['#ef4444', '#10b981', '#3b82f6'],
+            COLOR_MAP: { C0: '#ef4444', C1: '#10b981', C2: '#3b82f6' },
+            BASE_UNIT: [
+                [0, 1, 2, 3,  4,  5],
+                [6, 7, 8, 9, 10, 11]
+            ],
+            COLOR_INDEX: [0, 1, 1, 0, 2, 2, 2, 0, 2, 1, 0, 1],
+        };
+        CFG.TR_UNIT_COLS  = 2 * CFG.UNIT_COLS;   // 6
+        CFG.TOTAL_TYPES   = CFG.UNIT_ROWS * CFG.TR_UNIT_COLS; // 12
+        CFG.MAX_DIST_SQ   = CFG.UNIT_ROWS ** 2 + CFG.UNIT_COLS ** 2; // 13
 
-        const EDITABLE_BASE_UNIT = [
-            [0, 1, 2, 3,  4,  5], // R, G, B, R, G, B (Össz: 2R, 2G, 2B)
-            [6, 7, 8, 9, 10, 11]  // B, G, R, B, G, R (Össz: 2R, 2G, 2B)
-        ];
-        const COLOR_INDEX = [
-            0, 1, 1, 0, 2, 2,
-            2, 0, 2, 1, 0, 1
-        ];
-        
-        // Globális változók és konstansok
-        const GRID_SIZE = 12; // 12x12 rács (mindkét dimenzióban)
-        const UNIT_COLS = 3; // A vizuális pöttyök 3 oszloponként jelennek meg (2x3 blokk)
-        const UNIT_ROWS = 2;  // 2 sor az alapegységben (a transzlációs egység magassága)
-        const TR_UNIT_COLS = 2 * UNIT_COLS;  // 6 oszlop az alapegységben (a transzlációs egység szélessége)
-        const GUESS_GOAL = 5; // Cél: 5 négyzet megtippelése
-        const MAX_DIST_SQ = (UNIT_ROWS * UNIT_ROWS) + (UNIT_COLS * UNIT_COLS); // 2*2 + 3*3 = 13
+        const $ = id => document.getElementById(id);
+        const dom = {
+            gameContainer:    $('game-container'),
+            gridContainer:    $('grid-container'),
+            scoreDisplay:     $('score-display'),
+            colorPickerModal: $('color-picker-modal'),
+            messageModal:     $('message-modal'),
+            modalTitle:       $('modal-title'),
+            modalMessage:     $('modal-message'),
+            restartButton:    $('restart-button'),
+            closeModalButton: $('close-modal-button'),
+        };
+        const colorOptionButtons = dom.colorPickerModal.querySelectorAll('.color-option-button');
 
-        // A szimmetria-középpontot hordozó cellák (r, c) koordinátái
-        // (A 2x3-as blokk jobb alsó cellája)
-        const SYMMETRY_CENTERS = [];
-        for (let r = 0; r < GRID_SIZE; r++) {
-            for (let c = 0; c < GRID_SIZE; c++) {
-                // Ugyanaz a logika, mint a renderGrid()-ben a pötty elhelyezésénél
-                if ((r + 1) % UNIT_ROWS === 0 && (c + 1) % UNIT_COLS === 0 && r !== GRID_SIZE - 1 && c !== GRID_SIZE - 1) {
-                    SYMMETRY_CENTERS.push({ r, c });
-                }
-            }
+        let state = {};
+
+        function resetState() {
+            state = {
+                gridData:           [],
+                knownCells:         new Set(),
+                initialRevealedCells: new Set(),
+                userPaintedCells:   {},
+                guessedCells:       {},
+                targetCell:         null,
+                score:              0,
+                guessesCompleted:   0,
+                startTime:          null,
+                isRunning:          false,
+            };
         }
 
-        let gridData = [];
-        let knownCells = new Set();
-        let initialRevealedCells = new Set(); // A 12 kezdeti cella tárolására
-        let userPaintedCells = {}; // ÚJ: A felhasználó által szabadon színezett cellákat tárolja {'r,c': '#hexcolor'}
-        let targetCell = null;
-        let score = 0;
-        let guessesCompleted = 0; // Megtippelt négyzetek száma
-        let startTime; // Kezdő időpont
-        let isGameRunning = false;
-        let BASE_UNIT = []; // A 2x6-os alapegység
-
-        // DOM elemek
-        const gameContainer = document.getElementById('game-container');
-        const gridContainer = document.getElementById('grid-container');
-        const scoreDisplay = document.getElementById('score-display');
-        const colorPickerModal = document.getElementById('color-picker-modal');
-        const colorOptionButtons = colorPickerModal.querySelectorAll('.color-option-button');
-        const messageModal = document.getElementById('message-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalMessage = document.getElementById('modal-message');
-        const restartButton = document.getElementById('restart-button');
-        
-        /**
-         * Létrehozza a teljes 12x12-es rácsmintát az EDITABLE_BASE_UNIT ismétlésével.
-         */
-        function initializeGridData() {
-            // BASE_UNIT beállítása a szerkeszthető konstansból
-            BASE_UNIT = EDITABLE_BASE_UNIT; 
-            gridData = [];
+        function buildGridData() {
+            const { GRID_SIZE, UNIT_ROWS, UNIT_COLS, TR_UNIT_COLS, BASE_UNIT } = CFG;
+            const grid = [];
             for (let r = 0; r < GRID_SIZE; r++) {
-                gridData[r] = [];
+                grid[r] = [];
                 for (let c = 0; c < GRID_SIZE; c++) {
-                    const unitC = c % (2 * UNIT_COLS);
+                    const unitC = c % TR_UNIT_COLS;
                     const unitR = r % (2 * UNIT_ROWS);
-                    if (unitR < UNIT_ROWS) {
-                        gridData[r][c] = BASE_UNIT[unitR][unitC];
-                    } else {
-                        gridData[r][c] = BASE_UNIT[2 * UNIT_ROWS - unitR - 1][2 * UNIT_COLS - 1 - unitC];
+                    grid[r][c] = unitR < UNIT_ROWS
+                        ? BASE_UNIT[unitR][unitC]
+                        : BASE_UNIT[2 * UNIT_ROWS - unitR - 1][TR_UNIT_COLS - 1 - unitC];
+                }
+            }
+            return grid;
+        }
+
+        function buildSymmetryCenters() {
+            const { GRID_SIZE, UNIT_ROWS, UNIT_COLS } = CFG;
+            const centers = [];
+            for (let r = 0; r < GRID_SIZE - 1; r++) {
+                for (let c = 0; c < GRID_SIZE - 1; c++) {
+                    if ((r + 1) % UNIT_ROWS === 0 && (c + 1) % UNIT_COLS === 0) {
+                        centers.push({ r, c });
                     }
                 }
             }
+            return centers;
         }
 
-        /**
-         * Vizuálisan felépíti a rácsot, hozzáadva a szimmetria pötty jelöléseket (2x3-as ismétlődés).
-         */
+        const SYMMETRY_CENTERS = buildSymmetryCenters();
+
         function renderGrid() {
-            gridContainer.innerHTML = '';
+            const { GRID_SIZE, UNIT_ROWS, UNIT_COLS } = CFG;
+            dom.gridContainer.innerHTML = '';
             for (let r = 0; r < GRID_SIZE; r++) {
                 for (let c = 0; c < GRID_SIZE; c++) {
                     const cell = document.createElement('div');
-                    
-                    let classNames = 'grid-cell unknown-cell rounded-sm';
-                    
-                    // Szimmetria pötty jelölése (a 2x3-as blokkok találkozásánál)
-                    // UNIT_ROWS = 2, DOT_UNIT_COLS = 3
-                    if ((r + 1) % UNIT_ROWS === 0 && (c + 1) % UNIT_COLS === 0 && r !== GRID_SIZE - 1 && c !== GRID_SIZE - 1) {
-                        classNames += ' center-marker';
+                    let cls = 'grid-cell unknown-cell rounded-sm';
+                    if ((r + 1) % UNIT_ROWS === 0 && (c + 1) % UNIT_COLS === 0
+                            && r !== GRID_SIZE - 1 && c !== GRID_SIZE - 1) {
+                        cls += ' center-marker';
                     }
-
-                    cell.className = classNames;
-                    cell.id = `cell-${r}-${c}`;
+                    cell.className   = cls;
+                    cell.id          = `cell-${r}-${c}`;
                     cell.dataset.row = r;
                     cell.dataset.col = c;
-                    gridContainer.appendChild(cell);
+                    dom.gridContainer.appendChild(cell);
                 }
             }
         }
 
-        /**
-         * A rács frissítése a ismert és a célcella állapotával.
-         * MÓDOSÍTVA: Figyelembe veszi a userPaintedCells-t is.
-         */
+        function getCellEl(r, c) { return $(`cell-${r}-${c}`); }
+
         function updateGridDisplay() {
-            // Ellenőrizzük, hogy vége van-e a játéknak (még ha isGameRunning is true, ha elérte a célt, vége van)
-            const gameEnded = !isGameRunning && guessesCompleted >= GUESS_GOAL; 
-            
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const cell = document.getElementById(`cell-${r}-${c}`);
-                    const cellKey = `${r},${c}`;
-                    
-                    cell.classList.remove('target-cell');
-                    cell.style.opacity = '1'; // Alapértelmezett átlátszóság
-
-                    const colorIndex = COLOR_INDEX[gridData[r][c]];
-                    const actualColor = COLORS[colorIndex];
-                    
-                    // 1. (ÚJ) Ellenőrizzük a felhasználói festést
-                    if (userPaintedCells[cellKey]) {
-                        cell.style.backgroundColor = userPaintedCells[cellKey];
-                        cell.classList.remove('unknown-cell');
-                        cell.style.opacity = '1'; // A festett cellák legyenek 100% láthatóak
-                    } 
-                    // 2. (RÉGI) Felfedjük a cellát, ha ismert, vagy ha vége a játéknak
-                    else if (knownCells.has(cellKey) || gameEnded) {
-                        cell.style.backgroundColor = actualColor;
-                        cell.classList.remove('unknown-cell');
-                        
-                        // FORDÍTOTT HALVÁNYÍTÁS:
-                        
-                        // Alapértelmezés: A felhasználó által tippelt (vagy játék végén felfedett) cella legyen halványabb (0.7).
-                        cell.style.opacity = '0.7'; 
-                        
-                        // Kiemelés: Az eredetileg felfedett 12 cella (a kiindulási adatok) legyen teljes fénnyel (1).
-                        if (initialRevealedCells.has(cellKey)) {
-                            cell.style.opacity = '1'; 
-                        }
-                        
-                    } 
-                    // 3. (RÉGI) Játék közben, nem ismert cellák
-                    else {
-                        cell.style.backgroundColor = '';
-                        cell.classList.add('unknown-cell');
-                    }
-
-                    // 4. (RÉGI) Kiemeljük a célcellát (csak futó játékban)
-                    if (isGameRunning && targetCell && targetCell.r === r && targetCell.c === c) {
-                        cell.classList.add('target-cell');
-                        // A célcellán soha ne legyen halványítás, amíg célnak van kijelölve
-                        // (Felülírja a userPaint opacitást is, ha esetleg festve volt)
-                        cell.style.opacity = '1'; 
-                    }
+            const gameEnded = !state.isRunning && state.guessesCompleted >= CFG.GUESS_GOAL;
+            for (let r = 0; r < CFG.GRID_SIZE; r++) {
+                for (let c = 0; c < CFG.GRID_SIZE; c++) {
+                    updateCell(r, c, gameEnded);
                 }
             }
             hideColorPicker();
         }
 
-        /**
-         * Random kitalálandó cellát választ, ami még ismeretlen.
-         * MÓDOSÍTVA: A kérés alapján előnyben részesíti a "nem levezethető" cellákat.
-         */
-        function selectNewTarget() {
-            
-            // 1. Határozzuk meg az összes levezethető cellát
-            const derivableCells = new Set();
-            // Csak a ténylegesen ismert cellákat használjuk (a szabadon festettek nem számítanak)
-            const knownCellKeys = Array.from(knownCells); 
-            
-            for (const cellKey of knownCellKeys) {
+        function updateCell(r, c, gameEnded) {
+            const cellKey     = `${r},${c}`;
+            const cell        = getCellEl(r, c);
+            const colorIndex  = CFG.COLOR_INDEX[state.gridData[r][c]];
+            const actualColor = CFG.COLORS[colorIndex];
+
+            cell.classList.remove('target-cell', 'initial-cell');
+            cell.style.opacity = '1';
+            cell.querySelector('.painted-dot')?.remove();
+            cell.querySelector('.guess-result-emoji')?.remove();
+
+            const isKnown = state.knownCells.has(cellKey);
+
+            if (isKnown || gameEnded) {
+                cell.style.backgroundColor = actualColor;
+                cell.classList.remove('unknown-cell');
+                cell.style.opacity = state.initialRevealedCells.has(cellKey) ? '1' : '0.7';
+                if (state.initialRevealedCells.has(cellKey)) cell.classList.add('initial-cell');
+                if (Object.hasOwn(state.guessedCells, cellKey)) {
+                    appendEmoji(cell, state.guessedCells[cellKey] ? '✓' : '✗');
+                }
+            } else if (state.userPaintedCells[cellKey]) {
+                cell.style.backgroundColor = '';
+                cell.classList.add('unknown-cell');
+                appendDot(cell, state.userPaintedCells[cellKey]);
+            } else {
+                cell.style.backgroundColor = '';
+                cell.classList.add('unknown-cell');
+            }
+
+            if (state.isRunning && state.targetCell?.r === r && state.targetCell?.c === c) {
+                cell.classList.add('target-cell');
+                cell.style.opacity = '1';
+            }
+        }
+
+        function appendDot(cell, color) {
+            const dot = document.createElement('div');
+            dot.className = 'painted-dot';
+            dot.style.backgroundColor = color;
+            cell.appendChild(dot);
+        }
+
+        function appendEmoji(cell, text) {
+            const span = document.createElement('span');
+            span.className = 'guess-result-emoji';
+            span.textContent = text;
+            cell.appendChild(span);
+        }
+
+        function buildDerivableCells() {
+            const derivable = new Set();
+            for (const cellKey of state.knownCells) {
                 const [r1, c1] = cellKey.split(',').map(Number);
-
-                for (const center of SYMMETRY_CENTERS) {
-                    const rC = center.r;
-                    const cC = center.c;
-
-                    // Távolság négyzetének számítása
-                    // A cella (r1, c1) és a középpontot hordozó cella (rC, cC) között
-                    const distSq = Math.pow(r1 - rC, 2) + Math.pow(c1 - cC, 2);
-
-                    // Ha közelebbi, mint a 2x3-as átló négyzete (13)
-                    if (distSq < MAX_DIST_SQ) {
-                        // Tükrözés a (rC + 0.5, cC + 0.5) pontra:
+                for (const { r: rC, c: cC } of SYMMETRY_CENTERS) {
+                    const distSq = (r1 - rC) ** 2 + (c1 - cC) ** 2;
+                    if (distSq < CFG.MAX_DIST_SQ) {
                         const r2 = 2 * rC - r1;
                         const c2 = 2 * cC - c1;
-
-                        // Ellenőrizzük, hogy a rácson belül van-e
-                        if (r2 >= 0 && r2 < GRID_SIZE && c2 >= 0 && c2 < GRID_SIZE) {
-                            derivableCells.add(`${r2},${c2}`);
+                        if (r2 >= 0 && r2 < CFG.GRID_SIZE && c2 >= 0 && c2 < CFG.GRID_SIZE) {
+                            derivable.add(`${r2},${c2}`);
                         }
                     }
                 }
             }
+            return derivable;
+        }
 
-            // 2. Gyűjtsük össze a lehetséges célcellákat
-            let possibleTargets = []; // A "nehéz" célpontok (preferált)
-            let fallbackTargets = []; // A "könnyű" célpontok (ha nincs nehéz)
+        function selectNewTarget() {
+            const derivable  = buildDerivableCells();
+            const preferred  = [];
+            const fallback   = [];
 
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
+            for (let r = 0; r < CFG.GRID_SIZE; r++) {
+                for (let c = 0; c < CFG.GRID_SIZE; c++) {
                     const cellKey = `${r},${c}`;
-
-                    // A cella akkor jöhet szóba, ha (A) nem ismert ÉS (B) nincs kifestve
-                    const isUnknown = !knownCells.has(cellKey);
-                    const isNotPainted = !userPaintedCells[cellKey];
-
-                    if (isUnknown && isNotPainted) {
-                        // Elmentjük a fallback listába (ez a régi logika)
-                        fallbackTargets.push({ r, c });
-
-                        // ÚJ LOGIKA: Akkor jó célpont, ha (C) NEM levezethető
-                        if (!derivableCells.has(cellKey)) {
-                            possibleTargets.push({ r, c });
-                        }
+                    if (!state.knownCells.has(cellKey)) {
+                        fallback.push({ r, c });
+                        if (!derivable.has(cellKey)) preferred.push({ r, c });
                     }
                 }
             }
 
-            let chosenList;
+            const pool = preferred.length ? preferred : fallback;
+            if (!pool.length) { if (state.isRunning) endGame(); return; }
 
-            if (possibleTargets.length > 0) {
-                // 3a. Van "nehéz" (nem levezethető) cella, válasszunk abból
-                chosenList = possibleTargets;
-            } else if (fallbackTargets.length > 0) {
-                // 3b. Nincs "nehéz" cella, de van még ismeretlen. Válasszunk a maradék (de levezethető) cellákból.
-                chosenList = fallbackTargets;
-            } else {
-                // 3c. Nincs több cella (minden ki van töltve vagy festve)
-                // Ha a játék még fut (mert pl. még nincs meg az 5 tipp, de elfogytak a cellák)
-                if (isGameRunning) {
-                    endGame();
-                }
-                return; // Nincs mit választani
-            }
-
-            // 4. Válasszunk egy véletlen célpontot a kiválasztott listából
-            const randomIndex = Math.floor(Math.random() * chosenList.length);
-            targetCell = chosenList[randomIndex];
+            state.targetCell = pool[Math.floor(Math.random() * pool.length)];
             updateGridDisplay();
         }
-        
-        /**
-         * Megjeleníti a színválasztó modalt a célcella felett.
-         * MÓDOSÍTVA: Kap egy 'mode' paramétert ('guess' vagy 'paint').
-         * @param {number} r - Sor index.
-         * @param {number} c - Oszlop index.
-         * @param {string} mode - 'guess' (tippelés) vagy 'paint' (szabad színezés).
-         */
-        function showColorPicker(r, c, mode = 'guess') {
-            
-            if (mode === 'guess') {
-                // Ha 'guess' módban hívjuk, ellenőrizzük a játék állapotát és a célcellát
-                if (!isGameRunning || !targetCell || targetCell.r !== r || targetCell.c !== c) {
-                    return; 
+
+        function revealInitialCells() {
+            const typeCells = Array.from({ length: CFG.TOTAL_TYPES }, () => []);
+            for (let r = 0; r < CFG.GRID_SIZE; r++) {
+                for (let c = 0; c < CFG.GRID_SIZE; c++) {
+                    typeCells[state.gridData[r][c]].push({ r, c });
                 }
-            } 
-            // 'paint' módban mindig engedélyezzük, ha van cella DOM
-
-            const targetDom = document.getElementById(`cell-${r}-${c}`);
-            if (!targetDom) return; // Ha nincs ilyen cella, lépjünk ki
-            
-            // ELŐSZÖR: Eltávolítjuk a 'hidden' osztályt, hogy a böngésző ki tudja számolni a méreteket.
-            colorPickerModal.classList.remove('hidden');
-
-            // Beállítjuk a modal adatait, hogy a gombok tudják, mit kell tenni
-            colorPickerModal.dataset.mode = mode;
-            colorPickerModal.dataset.cellKey = `${r},${c}`;
-
-            // Koordináták a gameContainer-hez képest
-            const targetRect = targetDom.getBoundingClientRect();
-            const gameContainerRect = gameContainer.getBoundingClientRect();
-            
-            // MÉRETEK: Most már pontosan le tudjuk kérni a modal méreteit
-            const pickerHeight = colorPickerModal.offsetHeight;
-            const pickerWidth = colorPickerModal.offsetWidth;
-            const offsetMargin = 5; // Margó a cella felett
-            
-            // Felső pozíció: Célcella teteje (gameContainer-hez képest) - modal magassága - margó
-            const top = (targetRect.top - gameContainerRect.top) - pickerHeight - offsetMargin; 
-            
-            // Bal pozíció: Célcella középpontja - modal szélességének fele
-            const left = (targetRect.left - gameContainerRect.left) + (targetRect.width / 2) - (pickerWidth / 2);
-
-            // POZÍCIÓ BEÁLLÍTÁSA:
-            colorPickerModal.style.top = `${top}px`;
-            colorPickerModal.style.left = `${left}px`;
-        }
-
-        /**
-         * Elrejti a színválasztó modalt.
-         */
-        function hideColorPicker() {
-            colorPickerModal.classList.add('hidden');
-        }
-
-        /**
-         * Kezeli a felhasználó színtippjét (csak 'guess' módban).
-         * @param {string} guessedColorIndexString - A tippelt szín indexe (C0, C1, C2).
-         */
-        function handleGuess(guessedColorIndexString) {
-            if (!isGameRunning || !targetCell) return;
-            
-            const guessedColorIndex = parseInt(guessedColorIndexString.replace('C', ''), 10);
-            const actualColorIndex = COLOR_INDEX[gridData[targetCell.r][targetCell.c]];
-            const cellKey = `${targetCell.r},${targetCell.c}`;
-
-            let isCorrect;
-            
-            if (guessedColorIndex === actualColorIndex) {
-                // Helyes tipp: +1 pont
-                score += 1;
-                isCorrect = true;
-            } else {
-                // Helytelen tipp: 0 pont
-                isCorrect = false;
             }
-            
-            // Növeljük a megtippelt négyzetek számát
-            guessesCompleted++; 
-            
-            // A cella színe ismertté válik tippelés után
-            knownCells.add(cellKey); 
-            // Ha a cella festve volt, de most tippeltünk rá, töröljük a festést,
-            // hogy a 'knownCells' logika vegye át az irányítást
-            delete userPaintedCells[cellKey]; 
+            typeCells.forEach(cells => {
+                const { r, c } = cells[Math.floor(Math.random() * cells.length)];
+                const key = `${r},${c}`;
+                state.initialRevealedCells.add(key);
+                state.knownCells.add(key);
+            });
+        }
+
+        function showColorPicker(r, c, mode) {
+            if (mode === 'guess' && (!state.isRunning || state.targetCell?.r !== r || state.targetCell?.c !== c)) return;
+
+            const targetEl      = getCellEl(r, c);
+            const targetRect    = targetEl.getBoundingClientRect();
+            const containerRect = dom.gameContainer.getBoundingClientRect();
+
+            dom.colorPickerModal.classList.remove('hidden');
+            dom.colorPickerModal.classList.toggle('paint-mode', mode === 'paint');
+            dom.colorPickerModal.dataset.mode    = mode;
+            dom.colorPickerModal.dataset.cellKey = `${r},${c}`;
+
+            requestAnimationFrame(() => {
+                const pw = dom.colorPickerModal.offsetWidth;
+                const ph = dom.colorPickerModal.offsetHeight;
+                dom.colorPickerModal.style.top  = `${targetRect.top - containerRect.top - ph - 5}px`;
+                dom.colorPickerModal.style.left = `${targetRect.left - containerRect.left + targetRect.width / 2 - pw / 2}px`;
+            });
+        }
+
+        function hideColorPicker() {
+            dom.colorPickerModal.classList.add('hidden');
+            dom.colorPickerModal.classList.remove('paint-mode');
+        }
+
+        function handleGuess(colorCode) {
+            if (!state.isRunning || !state.targetCell) return;
+
+            const { r, c } = state.targetCell;
+            const cellKey        = `${r},${c}`;
+            const guessedIdx     = parseInt(colorCode.replace('C', ''), 10);
+            const actualIdx      = CFG.COLOR_INDEX[state.gridData[r][c]];
+            const isCorrect      = guessedIdx === actualIdx;
+
+            if (isCorrect) state.score++;
+            state.guessesCompleted++;
+            state.knownCells.add(cellKey);
+            delete state.userPaintedCells[cellKey];
+            state.guessedCells[cellKey] = isCorrect;
 
             updateScoreDisplay();
-            showFeedback(isCorrect);
-            
-            // Ellenőrizzük, hogy elértük-e a célt (5 megtippelt négyzet)
-            if (guessesCompleted >= GUESS_GOAL) {
-                endGame();
+
+            if (state.guessesCompleted >= CFG.GUESS_GOAL) endGame();
+            else selectNewTarget();
+        }
+
+        function handlePaint(colorCode, cellKey) {
+            const colorHex = CFG.COLOR_MAP[colorCode];
+            if (state.userPaintedCells[cellKey] === colorHex) {
+                delete state.userPaintedCells[cellKey];
             } else {
-                selectNewTarget(); // Új cellát választunk
+                state.userPaintedCells[cellKey] = colorHex;
             }
-        }
-
-        /**
-         * Megjeleníti a pontszámot.
-         */
-        function updateScoreDisplay() {
-            scoreDisplay.textContent = `Pontszám: ${score}`;
-            scoreDisplay.classList.remove('text-red-600', 'text-green-600');
-            if (score < 0) {
-                scoreDisplay.classList.add('text-red-600');
-            } else if (score > 0) {
-                scoreDisplay.classList.add('text-green-600');
-            }
-        }
-
-        /**
-         * Vizuális visszajelzés (pl. pontszám felvillanás)
-         */
-        function showFeedback(isCorrect) {
-            const feedbackText = isCorrect ? 'jó tipp +1' : 'nem talált'; 
-            const feedbackColor = isCorrect ? 'text-green-600' : 'text-gray-500';
-
-            const feedbackEl = document.createElement('div');
-            feedbackEl.textContent = feedbackText;
-            feedbackEl.className = `absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-4xl font-extrabold ${feedbackColor} opacity-0 pointer-events-none transition-all duration-2000 ease-out z-50`;
-            
-            gameContainer.appendChild(feedbackEl); // A gameContainer relatív
-
-            // Animáció indítása
-            setTimeout(() => {
-                feedbackEl.style.opacity = '1';
-                feedbackEl.style.top = '10%'; // Felfelé lebegés
-            }, 10);
-
-            // Eltávolítás az animáció után
-            setTimeout(() => {
-                feedbackEl.remove();
-            }, 500);
-        }
-
-        /**
-         * Befejezi a játékot és megjeleníti az eredményt (pontszám + idő).
-         */
-        function endGame() {
-            if (!isGameRunning && guessesCompleted < GUESS_GOAL) {
-                 // Ha hívták, de még nem volt meg az 5 tipp (pl. elfogytak a cellák)
-                 if (!isGameRunning) return; // Ne fusson le többször
-            }
-            
-            isGameRunning = false;
             hideColorPicker();
-            
-            // Idő számítása
-            const timeTaken = ((new Date() - startTime) / 1000).toFixed(2); // Másodpercben
+            updateGridDisplay();
+        }
 
-            modalTitle.textContent = "Játék vége!";
-            modalMessage.innerHTML = `
+        function updateScoreDisplay() {
+            dom.scoreDisplay.textContent = `Pontszám: ${state.score} / ${state.guessesCompleted}`;
+            dom.scoreDisplay.classList.remove('text-red-600', 'text-green-600');
+            if (state.score < 0)      dom.scoreDisplay.classList.add('text-red-600');
+            else if (state.score > 0) dom.scoreDisplay.classList.add('text-green-600');
+        }
+
+        function endGame() {
+            state.isRunning = false;
+            hideColorPicker();
+
+            const timeTaken = ((Date.now() - state.startTime) / 1000).toFixed(2);
+            dom.modalTitle.textContent = 'Játék vége!';
+            dom.modalMessage.innerHTML = `
                 Gratulálunk!
                 <br><br>
-                Elért pontszám: <strong class="${score >= 0 ? 'text-green-600' : 'text-black-600'}">${score} pont</strong>
+                Elért pontszám: <strong class="${state.score >= 0 ? 'text-green-600' : 'text-black-600'}">${state.score} / ${state.guessesCompleted} </strong>
                 <br>
-                Eltelt idő: <strong class="text-indigo-600">${timeTaken} másodperc
+                Eltelt idő: <strong class="text-indigo-600">${timeTaken} másodperc</strong>
             `;
-            messageModal.classList.remove('hidden');
-            
-            // Játék vége után az összes cella felfedése
+            dom.messageModal.classList.remove('hidden');
             updateGridDisplay();
         }
 
-        /**
-         * Inicializálja a játékot.
-         * MÓDOSÍTVA: Törli a userPaintedCells-t.
-         */
-        function startGame() {
-            // Játékállapot alaphelyzetbe állítása
-            score = 0;
-            guessesCompleted = 0;
-            isGameRunning = true;
-            userPaintedCells = {}; // Felhasználói festések törlése
-            knownCells.clear();
-            initialRevealedCells.clear(); // A kezdeti cellák listájának törlése
-            targetCell = null;
-            
-            // Időmérés indítása
-            startTime = new Date(); 
-            
-            updateScoreDisplay();
-            
-            // 1. Játékadatok és vizuális elemek inicializálása (az EDITABLE_BASE_UNIT alapján)
-            initializeGridData();
-            renderGrid();
-            
-            const REQUIRED_REVEALED_COUNT = 12;
-            const TOTAL_TYPES = UNIT_ROWS * TR_UNIT_COLS; // 12 egyedi típus
-            
-            let foundRevealedCells = [];
-            // Tömb, ami az összes (r, c) koordinátát tárolja típusonként (0-tól 11-ig)
-            const typeCells = new Array(TOTAL_TYPES).fill(0).map(() => []); 
-
-            // 2a. Csoportosítjuk az összes 144 cellát a 12 típus (unit pozíció) alapján
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const typeIndex = gridData[r][c];
-                    typeCells[typeIndex].push({ r, c });
-                }
-            }
-            // 2b. Minden típusból véletlenszerűen kiválasztunk egy cellát (12 összesen)
-            // Így garantáljuk, hogy minden szimmetriai pályából (típusból) rendelkezésre áll egy információs pont.
-            for (let i = 0; i < typeCells.length; i++) {
-                const cellsOfType = typeCells[i];
-                const randomIndex = Math.floor(Math.random() * cellsOfType.length);
-                foundRevealedCells.push(cellsOfType[randomIndex]);
-            }
-            
-            // 2c. A 12 egyedi típusú cella hozzáadása az ismert cellákhoz
-            foundRevealedCells.forEach(({ r, c }) => {
-                const cellKey = `${r},${c}`;
-                // Külön tároljuk a kezdeti cellákat a halványítás miatt
-                initialRevealedCells.add(cellKey); 
-                knownCells.add(cellKey);
-            });
-
-
-            // 3. Új célcella kiválasztása (az első szabad cella)
-            selectNewTarget();
-
-            // 4. Eseménykezelők beállítása
-            setupEventListeners();
-        }
-
-        /**
-         * Beállítja az összes szükséges eseményfigyelőt
-         * MÓDOSÍTVA: gridContainer.onclick és a gombok logikája.
-         */
         function setupEventListeners() {
-            // Újraindítás gomb
-            restartButton.onclick = () => {
-                messageModal.classList.add('hidden');
-                startGame();
-            };
+            dom.restartButton.onclick    = () => { dom.messageModal.classList.add('hidden'); startGame(); };
+            dom.closeModalButton.onclick = () =>   dom.messageModal.classList.add('hidden');
 
-            // ÚJ: Modal bezárása (X gomb)
-            const closeModalButton = document.getElementById('close-modal-button');
-            closeModalButton.onclick = () => {
-                messageModal.classList.add('hidden');
-            };
-
-            // Rácson belüli kattintás
-            gridContainer.onclick = (event) => {
+            dom.gridContainer.onclick = event => {
                 const cell = event.target.closest('.grid-cell');
-                if (!cell || cell.dataset.row === undefined || cell.dataset.col === undefined) {
-                    hideColorPicker();
-                    return;
-                }
-                
-                const r = parseInt(cell.dataset.row, 10);
-                const c = parseInt(cell.dataset.col, 10);
+                if (!cell) { hideColorPicker(); return; }
 
-                // 1. Eset: Ha a játék fut ÉS a célcellára kattintottunk
-                if (isGameRunning && targetCell && targetCell.r === r && targetCell.c === c) {
+                const r       = parseInt(cell.dataset.row, 10);
+                const c       = parseInt(cell.dataset.col, 10);
+                const cellKey = `${r},${c}`;
+
+                if (state.isRunning && state.targetCell?.r === r && state.targetCell?.c === c) {
                     showColorPicker(r, c, 'guess');
-                } 
-                // 2. Eset: Bármely más kattintás (játék fut vagy nem, nem a célcellára)
-                else {
+                } else if (state.knownCells.has(cellKey)) {
+                    hideColorPicker();
+                } else {
                     showColorPicker(r, c, 'paint');
                 }
             };
-            
-            // Színválasztó gombok
-            colorOptionButtons.forEach(button => {
-                button.onclick = (event) => {
-                    const mode = colorPickerModal.dataset.mode;
-                    const cellKey = colorPickerModal.dataset.cellKey;
-                    const colorData = event.target.dataset.color; // 'C0', 'C1', 'C2'
-                    
-                    if (mode === 'guess') {
-                        // Játék mód (tippelés)
-                        if (!isGameRunning) return;
-                        handleGuess(colorData);
-                    } else if (mode === 'paint') {
-                        // Szabad színezés mód
-                        // A háttérszínt kérjük le (lehet rgb() formátumú, de az konzisztens)
-                        const actualColorHex = event.target.style.backgroundColor; 
-                        
-                        // Ha a felhasználó ugyanarra a színre kattint, amit már festett, töröljük a festést
-                        if (userPaintedCells[cellKey] === actualColorHex) {
-                            delete userPaintedCells[cellKey];
-                        } else {
-                            userPaintedCells[cellKey] = actualColorHex;
-                        }
-                        
-                        hideColorPicker();
-                        updateGridDisplay(); // Frissítjük a rácsot, hogy megjelenjen az új szín (vagy a törlés)
-                    }
+
+            colorOptionButtons.forEach(btn => {
+                btn.onclick = event => {
+                    const mode      = dom.colorPickerModal.dataset.mode;
+                    const cellKey   = dom.colorPickerModal.dataset.cellKey;
+                    const colorCode = event.currentTarget.dataset.color;
+                    if (mode === 'guess')       handleGuess(colorCode);
+                    else if (mode === 'paint')  handlePaint(colorCode, cellKey);
                 };
             });
 
-            // Kattintás a modalon kívül is elrejti a választót
-            document.addEventListener('click', (event) => {
-                // Győződjünk meg róla, hogy a kattintás nem a rácson belül, és nem is a választón volt
-                if (!gridContainer.contains(event.target) && !colorPickerModal.contains(event.target)) {
+            document.addEventListener('click', event => {
+                if (!dom.gridContainer.contains(event.target) && !dom.colorPickerModal.contains(event.target)) {
                     hideColorPicker();
                 }
             });
         }
 
-        // Játék indítása az oldal betöltésekor
+        function startGame() {
+            resetState();
+            state.isRunning  = true;
+            state.startTime  = Date.now();
+
+            state.gridData = buildGridData();
+            updateScoreDisplay();
+            renderGrid();
+            revealInitialCells();
+            selectNewTarget();
+            setupEventListeners();
+        }
+
         window.onload = startGame;
+    })();
     </script>
 </body>
 </html>
-
-
