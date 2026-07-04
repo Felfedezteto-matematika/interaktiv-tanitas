@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Távolságbarkochba</title>
+    <!-- PeerJS könyvtár a valós idejű, szerver nélküli kommunikációhoz -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h2, h3 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            background-color: #3498db;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .table-container {
+            margin-top: 20px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #fafafa;
+        }
+        .active-table {
+            border-color: #2ecc71;
+            background-color: #f4fbf7;
+        }
+        .disabled-table {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+        }
+        .tipp-input {
+            width: 50px;
+            padding: 5px;
+            text-align: center;
+        }
+        .talalt {
+            background-color: #2ecc71;
+            color: white;
+            font-weight: bold;
+        }
+        .radicand {
+            border-top: 1px solid #333;
+            padding-top: 1px;
+            margin-left: 1px;
+        }
+
+        /* --- TANÁRI DASHBOARD STÍLUSOK --- */
+        .teacher-layout {
+            display: flex;
+            min-height: 90vh;
+            gap: 20px;
+        }
+        .sidebar {
+            width: 220px;
+            background: #34495e;
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sidebar h4 {
+            margin-top: 0;
+            border-bottom: 1px solid #5d6d7e;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+        .student-tab-btn {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            text-align: left;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #455a64;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between; /* Név balra, pontszám jobbra */
+            align-items: center;
+        }
+        .student-tab-btn:hover {
+            background-color: #415b76;
+        }
+        .student-tab-btn.active-tab {
+            background-color: #2ecc71;
+            color: white;
+            border-color: #27ae60;
+        }
+        .student-score {
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: bold;
+            background: rgba(0,0,0,0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .main-dashboard {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .room-creation {
+            text-align: center;
+            padding: 40px;
+        }
+        .share-link-box {
+            background: #e8f4f8;
+            padding: 15px;
+            border-left: 5px solid #3498db;
+            margin: 20px 0;
+            font-weight: bold;
+            word-break: break-all;
+        }
+        .passive-view {
+            pointer-events: none; /* A tanár nem tud kattintani a diák felületén */
+            opacity: 0.9;
+        }
+        .no-student-selected {
+            text-align: center;
+            color: #7f8c8d;
+            margin-top: 100px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= ROLES VÁLASZTÓ (FŐOLDAL) ================= -->
+<div id="role-selection-section" class="container">
+    <h2>Távolságbarkochba</h2>
+    <p style="text-align:center;">Kérlek válaszd ki a szerepkört:</p>
+    <button onclick="initTeacher()" style="margin-bottom: 10px; background-color: #e67e22;">Tanár vagyok (Szoba létrehozása)</button>
+    <button onclick="initStudentMode()" style="background-color: #34495e;">Diák vagyok (Csatlakozás kóddal)</button>
+</div>
+
+<!-- ================= DIÁK FELÜLET ================= -->
+<div id="student-master-container" class="container hidden">
+    <h2>Távolságbarkochba</h2>
+
+    <div id="login-section">
+        <div class="form-group">
+            <label for="student-name"><strong>Kérlek, add meg a neved a kezdéshez:</strong></label>
+            <input type="text" id="student-name" placeholder="Pl. Szabó Péter">
+        </div>
+        <div class="form-group" id="room-input-group">
+            <label for="room-id-input"><strong>Szoba kódja:</strong></label>
+            <input type="text" id="room-id-input" placeholder="A tanártól kapott kód">
+        </div>
+        <button onclick="startTask()">Feladat indítása</button>
+    </div>
+
+    <div id="task-section" class="hidden">
+        <h3>Üdv, <span id="display-name"></span>!</h3>
+        <p>Találd meg a 7 elrejtett pontot! A koordináták egészek és -20 és 20 közé esnek. Mindig csak az aktív táblázatban tippelhetsz.</p>
+        
+        <div id="tables-wrapper"></div>
+    </div>
+</div>
+
+<!-- ================= TANÁRI DASHBOARD FELÜLET ================= -->
+<div id="teacher-master-container" class="hidden" style="max-width: 1200px; margin: 0 auto;">
+    
+    <!-- Szoba létrehozása nézet -->
+    <div id="teacher-init-view" class="container room-creation">
+        <h2>Új játék szoba létrehozása</h2>
+        <p>Kattints az alábbi gombra egy új játékmenet indításához.</p>
+        <button onclick="createRoom()" style="background-color: #2ecc71;">Szoba Generálása</button>
+        <div id="loading-text" class="hidden" style="margin-top:10px;">Szoba létrehozása folyamatban...</div>
+        
+        <div id="share-zone" class="hidden" style="text-align: center; margin-top: 20px;">
+    <p style="font-size: 20px; font-weight: bold; color: #333;">A szoba sikeresen létrejött! Csatlakozási kód a diákoknak:</p>
+
+    <!-- Ide fog kerülni a 6 jegyű szám, hatalmas méretben, vastagítva -->
+    <div id="share-link" style="font-size: 72px; font-weight: bold; color: #9b59b6; letter-spacing: 5px; margin: 20px 0;"></div>
+</div>
+            <p style="color: #7f8c8d; font-size: 14px; margin-top:20px;">Várakozás a diákok csatlakozására... Ne zárd be ezt az ablakot!</p>
+        </div>
+    </div>
+
+    <!-- Élő követő nézet -->
+    <div id="teacher-live-view" class="teacher-layout hidden">
+        <!-- Bal oldali diákválasztó "Fülek" -->
+        <div class="sidebar">
+            <h4>Diákok (<span id="student-count">0</span>)</h4>
+            <div id="student-tabs-container" style="display:flex; flex-direction:column; gap:8px;">
+                <!-- Ide kerülnek a diákok nevei gombként -->
+            </div>
+        </div>
+
+        <!-- Jobb oldali panel, ahol a kiválasztott diák képernyője látszódik -->
+        <div class="main-dashboard">
+            <h3 id="monitored-student-title" style="text-align: left; margin-top: 0; border-bottom: 2px solid #34495e; padding-bottom: 10px;">
+                Válassz ki egy diákot a bal oldali listából
+            </h3>
+            <div id="dashboard-content-area">
+                <div class="no-student-selected">
+                    A diákok képernyőjének megtekintéséhez kattints a nevükre a bal oldali sávban.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Globális Változók ---
+    let peer = null;
+    let conn = null; 
+    let isTeacher = false;
+    let roomId = "";
+    
+    // Játék adatok (Diák oldal)
+    let studentName = "";
+    let secretPoints = [];
+    let currentTableIndex = 0;
+
+    // Tanár oldal adatai
+    let connectedStudents = {}; // id -> { name: string, tablesHTML: string, currentTitle: string, score: number }
+    let activeMonitoredStudentId = null;
+
+    // URL paraméter ellenőrzés betöltéskor
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomParam = urlParams.get('room');
+        if (roomParam) {
+            initStudentMode();
+            document.getElementById('room-id-input').value = roomParam;
+        }
+    }
+
+    // --- Rendszer Inicializálások ---
+    function initTeacher() {
+        isTeacher = true;
+        document.getElementById("role-selection-section").classList.add("hidden");
+        document.getElementById("teacher-master-container").classList.remove("hidden");
+    }
+
+    function initStudentMode() {
+        isTeacher = false;
+        document.getElementById("role-selection-section").classList.add("hidden");
+        document.getElementById("student-master-container").classList.remove("hidden");
+    }
+
+    // --- Tanár: Szoba Létrehozás ---
+    function createRoom() {
+    document.getElementById("loading-text").classList.remove("hidden");
+
+    // Generálunk egy véletlenszerű 6 jegyű számot (pl. 482915)
+    roomId = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Átadjuk a generált rövid kódot a Peer-nek
+    peer = new Peer(roomId);
+
+    peer.on('open', function(id) {
+        // Biztonsági okokból frissítjük, ha a szerver mégis módosítaná
+        roomId = id; 
+        document.getElementById("loading-text").classList.add("hidden");
+        document.getElementById("share-zone").classList.remove("hidden");
+        
+        let baseProgUrl = window.location.href.split('?')[0];
+        let studentJoinUrl = `${baseProgUrl}?room=${roomId}`;
+        document.getElementById("share-link").innerText = roomId;
+    });
+
+    peer.on('connection', function(connection) {
+        handleTeacherIncomingConnection(connection);
+    });
+}
+
+    function copyLink() {
+        let linkText = document.getElementById("share-link").innerText;
+        navigator.clipboard.writeText(linkText).then(() => {
+            alert("A belépési link a vágólapra másolva!");
+        });
+    }
+
+    function handleTeacherIncomingConnection(connection) {
+        document.getElementById("teacher-init-view").classList.add("hidden");
+        document.getElementById("teacher-live-view").classList.remove("hidden");
+
+        connection.on('data', function(data) {
+            if (data.type === 'REGISTER') {
+                connectedStudents[connection.peer] = {
+                    name: data.name,
+                    tablesHTML: data.html,
+                    currentTitle: `Üdv, ${data.name}! (1. pont keresése)`,
+                    score: data.score
+                };
+                updateStudentTabs();
+            } 
+            else if (data.type === 'UPDATE') {
+                if (connectedStudents[connection.peer]) {
+                    connectedStudents[connection.peer].tablesHTML = data.html;
+                    connectedStudents[connection.peer].currentTitle = data.currentTitle;
+                    connectedStudents[connection.peer].score = data.score;
+                    
+                    updateStudentTabs(); // Pontszám változás miatt frissítjük a gombokat is
+
+                    if (activeMonitoredStudentId === connection.peer) {
+                        refreshMonitorArea();
+                    }
+                }
+            }
+        });
+
+        connection.on('close', function() {
+            delete connectedStudents[connection.peer];
+            if (activeMonitoredStudentId === connection.peer) {
+                activeMonitoredStudentId = null;
+                document.getElementById("dashboard-content-area").innerHTML = `<div class="no-student-selected">A megfigyelt diák kilépett.</div>`;
+                document.getElementById("monitored-student-title").innerText = "Válassz ki egy diákot";
+            }
+            updateStudentTabs();
+        });
+    }
+
+    function updateStudentTabs() {
+        const container = document.getElementById("student-tabs-container");
+        container.innerHTML = "";
+        
+        let keys = Object.keys(connectedStudents);
+        document.getElementById("student-count").innerText = keys.length;
+
+        keys.forEach(peerId => {
+            let student = connectedStudents[peerId];
+            let btn = document.createElement("button");
+            btn.className = `student-tab-btn ${activeMonitoredStudentId === peerId ? 'active-tab' : ''}`;
+            
+            // Név balra, a pontszám pedig a stílus miatt jobbra fog igazodni a gombon belül
+            btn.innerHTML = `<span>${student.name}</span> <span class="student-score">${student.score}/7</span>`;
+            
+            btn.onclick = function() {
+                selectStudentToMonitor(peerId);
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function selectStudentToMonitor(peerId) {
+        activeMonitoredStudentId = peerId;
+        updateStudentTabs(); 
+        refreshMonitorArea();
+    }
+
+    function refreshMonitorArea() {
+        if (!activeMonitoredStudentId) return;
+        let student = connectedStudents[activeMonitoredStudentId];
+        
+        document.getElementById("monitored-student-title").innerText = student.currentTitle;
+        document.getElementById("dashboard-content-area").innerHTML = `
+            <div class="passive-view">
+                ${student.tablesHTML}
+            </div>
+        `;
+    }
+
+    // --- Diák: Feladatkezelés ---
+    function startTask() {
+        studentName = document.getElementById("student-name").value.trim();
+        let targetRoom = document.getElementById("room-id-input").value.trim();
+
+        if (studentName === "") {
+            alert("Kérlek, írj be egy nevet!");
+            return;
+        }
+        if (targetRoom === "") {
+            alert("Kérlek, add meg a szoba kódját!");
+            return;
+        }
+
+        peer = new Peer();
+        
+        peer.on('open', function() {
+            conn = peer.connect(targetRoom);
+            
+            conn.on('open', function() {
+                document.getElementById("login-section").classList.add("hidden");
+                document.getElementById("display-name").innerText = studentName;
+                document.getElementById("task-section").classList.remove("hidden");
+
+                generateSecretPoints();
+                renderTables();
+                
+                sendUpdateToTeacher('REGISTER');
+            });
+
+            conn.on('error', function(err) {
+                alert("Hiba történt a csatlakozás során! Ellenőrizd a szobakódot.");
+            });
+        });
+    }
+
+    function generateSecretPoints() {
+        secretPoints.push({x: 0, y: 0}); 
+        for (let i = 0; i < 6; i++) {
+            let rx = Math.floor(Math.random() * 41) - 20;
+            let ry = Math.floor(Math.random() * 41) - 20;
+            secretPoints.push({x: rx, y: ry});
+        }
+    }
+
+    function renderTables() {
+        const wrapper = document.getElementById("tables-wrapper");
+        wrapper.innerHTML = "";
+
+        for (let t = 0; t < 7; t++) {
+            let tableDiv = document.createElement("div");
+            tableDiv.id = `table-container-${t}`;
+            tableDiv.className = `table-container ${t === 0 ? 'active-table' : 'disabled-table'}`;
+            
+            tableDiv.innerHTML = `
+                <h4>${t + 1}. Pont Keresése</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>x</th>
+                            <th>y</th>
+                            <th>Távolság</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-${t}">
+                        ${generateRowHTML(t, 0)}
+                    </tbody>
+                </table>
+            `;
+            wrapper.appendChild(tableDiv);
+        }
+    }
+
+    function generateRowHTML(tableIdx, rowIdx) {
+        return `
+            <tr id="row-${tableIdx}-${rowIdx}">
+                <td><input type="number" id="x-${tableIdx}-${rowIdx}" class="tipp-input" placeholder="x"></td>
+                <td><input type="number" id="y-${tableIdx}-${rowIdx}" class="tipp-input" placeholder="y"></td>
+                <td><button onclick="checkTipp(${tableIdx}, ${rowIdx})">OK</button></td>
+            </tr>
+        `;
+    }
+
+    function checkTipp(tableIdx, rowIdx) {
+        let xVal = document.getElementById(`x-${tableIdx}-${rowIdx}`).value;
+        let yVal = document.getElementById(`y-${tableIdx}-${rowIdx}`).value;
+
+        if (xVal === "" || yVal === "") {
+            alert("Kérlek, töltsd ki az X és Y mezőt is!");
+            return;
+        }
+
+        let x = parseInt(xVal);
+        let y = parseInt(yVal);
+        let target = secretPoints[tableIdx];
+
+        let gyokAlattiErtek = Math.pow(x - target.x, 2) + Math.pow(y - target.y, 2);
+        
+        let cellaHTML = "";
+        let isTalalt = false;
+
+        if (gyokAlattiErtek === 0) {
+            cellaHTML = "TALÁLT!";
+            isTalalt = true;
+        } else {
+            let gyok = Math.sqrt(gyokAlattiErtek);
+            if (Number.isInteger(gyok)) {
+                cellaHTML = gyok.toString();
+            } else {
+                cellaHTML = `&radic;<span class="radicand">${gyokAlattiErtek}</span>`;
+            }
+        }
+
+        let row = document.getElementById(`row-${tableIdx}-${rowIdx}`);
+        row.innerHTML = `
+            <td>${x}</td>
+            <td>${y}</td>
+            <td class="${isTalalt ? 'talalt' : ''}">${cellaHTML}</td>
+        `;
+
+        if (isTalalt) {
+            document.getElementById(`table-container-${tableIdx}`).className = "table-container disabled-table";
+            
+            if (tableIdx < 6) {
+                currentTableIndex = tableIdx + 1;
+                let nextTable = document.getElementById(`table-container-${currentTableIndex}`);
+                nextTable.className = "table-container active-table";
+                
+                nextTable.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert("Gratulálok! Mind a 7 pontot megtaláltad!");
+                currentTableIndex = 7; 
+            }
+        } else {
+            let tbody = document.getElementById(`tbody-${tableIdx}`);
+            let newRowIdx = rowIdx + 1;
+            
+            let newRow = document.createElement("tr");
+            newRow.id = `row-${tableIdx}-${newRowIdx}`;
+            newRow.innerHTML = generateRowHTML(tableIdx, newRowIdx);
+            tbody.appendChild(newRow);
+        }
+
+        sendUpdateToTeacher('UPDATE');
+    }
+
+    function sendUpdateToTeacher(msgType) {
+        if (!conn) return;
+
+        let tablesWrapperHTML = document.getElementById("tables-wrapper").innerHTML;
+        let titleText = `Üdv, ${studentName}! ` + 
+            (currentTableIndex < 7 ? `(${currentTableIndex + 1}. pont keresése)` : `(MIND A 7 PONT MEGVAN!)`);
+
+        conn.send({
+            type: msgType,
+            name: studentName,
+            html: tablesWrapperHTML,
+            currentTitle: titleText,
+            score: currentTableIndex // Átadjuk az aktuális pontszámot (hányadik táblázatnál tart)
+        });
+    }
+</script>
+
+</body>
+</html>
